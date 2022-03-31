@@ -1,50 +1,54 @@
-***************************************************************************************************
-*                                                                                                 *
-*                    Molecular Dynamics of a Lennard-Jones Particle System                        *
-*                                                                                                 *
-***************************************************************************************************
+*****************************************************************************************************************
+*                                                                                                               *
+*                             Molecular Dynamics of a Lennard-Jones Particle System                             *
+*                                                                                                               *
+*****************************************************************************************************************
 
---------------------------------------- System Parameters -----------------------------------------
+---------------------------------------------- System Parameters ------------------------------------------------
 
-Number of Particles (use x^3 for a better performance (1,8,27,64,125,216,343,512,729,1000,...)):
+Number of Particles (use x^3 (x integer) for a better performance (1,8,27,64,125,216,343,512,729,1000,1331,...)):
 125
 Geometry (SC/FCC):
 SC
 Density (g/cm^3):
-0.00018
+0.1
 Mass (g/mol):
 4.0026020
 LJ Sigma Parameter (A):
 2.551
 LJ Epsilon Parameter (KJ/mol):
 0.084768
-Cutoff (over the length of the system, between 0 and 0.5):
-0.5
+
+------------------------------------------------ Simualation Data -----------------------------------------------
+
+Cutoff (in units of LJ sigma):
+4.0
 Room Temperature (K):
 300.0
-
------------------------------------------ Simualation Data ----------------------------------------
-
 Initial Temperature (K):
 300.0
 Initial Bimodal Distribution at Initial Temperature (Yes/No):
 Yes
 Disordered system at Initial Temperature (Yes/No):
-No
+Yes
 Thermostat at Room Temperature (Yes/No):
 Yes
 Integration Method (Euler/Verlet):
 Verlet
 Temporal Step (ps):
 0.001
-Number of Steps:
-100
-Steps Between Two Measures:
-10
+Number of Steps (disorder system):
+10000
+Number of Steps (dynamics):
+10000000
+Steps Between Two Observable Measures:
+1000
+Steps Between Two Trajectory Measures:
+10000
 Number of Boxes (gofr):
-500
+100
 
--------------------------------------------- Files ------------------------------------------------
+----------------------------------------------------- Files -----------------------------------------------------
 
 Time Evolution:
 "temp_evol.dat"
@@ -55,4 +59,4 @@ VMD File:
 G(r) File:
 "gofr.dat"
 
-***************************************************************************************************
+*****************************************************************************************************************

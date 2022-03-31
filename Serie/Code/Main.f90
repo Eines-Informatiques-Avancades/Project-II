@@ -6,7 +6,8 @@ program Main
     use Pbc_module
     use Forces_module
     use Integrator_module
-    use Initial_state_module
+    use pair_distribution_function_module
+
     implicit none
     ! files
     character(len=80) :: infile, outfile1, outfile2, outfile3, outfile4
@@ -26,8 +27,10 @@ program Main
     character(len=3) :: thermostat        ! if "Yes" the system uses a thermostat at room temperature
     character(len=6) :: integrator        ! the integrators can be Euler or Velocity Verlet
     double precision :: in_dt             ! time between two steps in ps
+    integer          :: init_steps        ! initial steps in case of disordered system
     integer          :: steps             ! steps of the simulation
     integer          :: measure_steps     ! steps between two measures
+    integer          :: traj_steps        ! steps between two trajectories
     integer          :: boxes             ! number of boxes of the histogram
     ! parameters in reduced units
     double precision :: rho, temp, temp_init, dt
@@ -46,6 +49,10 @@ program Main
     double precision :: box_l, box_a
     ! dynamics
     double precision, allocatable :: newpos(:,:), oldpos(:,:), vel(:,:), force(:,:)
+    ! pair distribution function
+    integer :: measures 
+    double precision :: dr
+    double precision, allocatable :: gofr(:)
     ! others
     double precision :: dnparts
     double precision :: sigma, nu
@@ -54,8 +61,15 @@ program Main
     ! read parameters
     infile = "parameters.txt"
     call Read_parameters(infile, nparts, geometry, in_rho, mass, LJ_sig, LJ_eps, cutoff, in_temp, in_temp_init, bimodal, &
-    disordered_system, thermostat, integrator, in_dt, steps, measure_steps, boxes,  outfile1, outfile2, outfile3, outfile4)
-call  inputs_paralelizacion(nparts)
+    disordered_system, thermostat, integrator, in_dt, init_steps, steps, measure_steps, traj_steps, boxes,  outfile1, outfile2, &
+    outfile3, outfile4)
+
+    ! open files
+    open(12,file=outfile1)  ! observables evolution
+    open(13,file=outfile2)  ! mean square displacement
+    open(36,file=outfile3)  ! system evolution
+
+    ! determine the integrator
     if (integrator == "Verlet") then
         integrator_num = 1
         print*, "Verlet integrator"
@@ -64,13 +78,8 @@ call  inputs_paralelizacion(nparts)
         print*, "Euler integrator"
     endif
 
-    ! open files
-    open(12,file=outfile1)  ! observables evolution
-    open(13,file=outfile2)  ! mean square displacement
-    open(36,file=outfile3)  ! system evolution
-
     ! determine vectors dimensions
-    allocate(newpos(nparts,3), oldpos(nparts,3), vel(nparts,3), force(nparts,3))
+    allocate(newpos(nparts,3), oldpos(nparts,3), vel(nparts,3), force(nparts,3), gofr(boxes))
 
     ! calculate conversion fators
     dnparts = dble(nparts)
@@ -98,8 +107,6 @@ call  inputs_paralelizacion(nparts)
     else
         !call fcc_lattice(nparts,rho,newpos,box_l,box_a,box_m)
     endif
-    ! calculate cutoff radius
-    cutoff = cutoff*box_l
 
     if (thermostat == "Yes") then 
         therm_on = 1
@@ -117,8 +124,8 @@ call  inputs_paralelizacion(nparts)
         print*, "Initial velocities equal to zero"
     endif
 
-    ! generate gofr input file
-    call gofr_params(steps,measure_steps,nparts,box_l*lconv,in_rho,boxes,outfile3,outfile4)
+    ! initialize the histogram (pair distribution function)
+    call pair_distribution_function(1,nparts,measures,rho,newpos,boxes,gofr,box_l,cutoff,dr,outfile4)
 
     ! mess up the system
     if (disordered_system == "Yes") then
@@ -126,7 +133,7 @@ call  inputs_paralelizacion(nparts)
         call LJ_potential(nparts,newpos,cutoff,box_l,1, pot, force)
         nu = 5.d0*dt
         sigma = dsqrt(temp_init)
-        do iter  = 1, 1000000
+        do iter  = 1, init_steps
             if (integrator_num == 1) then 
                 call velocity_verlet_andersen(nparts,box_l,cutoff,nu,sigma,dt,newpos,vel,pot,force,1)
             else
@@ -167,12 +174,8 @@ call  inputs_paralelizacion(nparts)
         end if
         if (mod(iter,measure_steps) == 0) then
 
-            ! Write trajectory in xyz format to be read by VMD
-            write(36,*) nparts
-            write(36,*)
-            do l=1,nparts
-                write(36,*) 'A', newpos(l,1)*lconv, newpos(l,2)*lconv, newpos(l,3)*lconv
-            end do
+            ! sample distances (pair distribution function)
+            call pair_distribution_function(2,nparts,measures,rho,newpos,boxes,gofr,box_l,cutoff,dr,outfile4)
 
             ! calculate energy, temperature and pressure
             call Kinetic_Energy(nparts, vel, kin)
@@ -181,7 +184,25 @@ call  inputs_paralelizacion(nparts)
             call pressure(nparts,rho,tempi,box_l,cutoff,newpos,pres)
             write(12,*) time*timeconv, kin*econv, pot*econv, tot*econv, tempi*tempconv, pres*pconv
         end if
+
+        ! trajectories
+        if (mod(iter,traj_steps) == 0) then
+
+            ! Write trajectory in xyz format to be read by VMD
+            write(36,*) nparts
+            write(36,*)
+            do l=1,nparts
+                write(36,*) 'A', newpos(l,1)*lconv, newpos(l,2)*lconv, newpos(l,3)*lconv
+            end do
+
+        end if
     end do
+
+    ! normalize histogram (pair distribution function)
+    call pair_distribution_function(3,nparts,measures,rho,newpos,boxes,gofr,box_l,cutoff,dr,outfile4)
+    ! write results in real units
+    dr = dr*lconv
+    call pair_distribution_function(4,nparts,measures,rho,newpos,boxes,gofr,box_l,cutoff,dr,outfile4)
 
     print*, "The dynamics ended, the simulation ended."
 
@@ -197,8 +218,8 @@ end program Main
 !**********************************************************************************************************************************!
 ! read input file
 subroutine Read_parameters(params_file, nparts, geometry, density, mass, sigma, epsilon, cutoff, temp_room, temp_init, bimodal, &
-    disorder_system, thermostat, integrator, time_step, steps, measure_steps, boxes, observables_file, MSD_file, &
-    positions_file, gofr_file)
+    disorder_system, thermostat, integrator, time_step, init_steps, steps, measure_steps, traj_steps, boxes, observables_file, &
+    MSD_file, positions_file, gofr_file)
 
     implicit none
     ! input
@@ -218,8 +239,10 @@ subroutine Read_parameters(params_file, nparts, geometry, density, mass, sigma, 
     character(len=3), intent(out) :: thermostat ! Yes/No
     character(len=6), intent(out) :: integrator ! Euler/Verlet
     double precision, intent(out) :: time_step ! ps
+    integer, intent(out) :: init_steps ! initial steps in case of disordered system
     integer, intent(out) :: steps ! steps of simulation
     integer, intent(out) :: measure_steps ! steps between two measures
+    integer, intent(out) :: traj_steps ! steps between two trajectories
     integer, intent(out) :: boxes ! number of boxes histogram (g(r))
     character(len=80), intent(out) :: observables_file ! energy, temperature, etc evolution
     character(len=80), intent(out) :: MSD_file ! mean square displacement
@@ -249,13 +272,13 @@ subroutine Read_parameters(params_file, nparts, geometry, density, mass, sigma, 
     read(my_unit,*) sigma
     read(my_unit,*) 
     read(my_unit,*) epsilon
+    read(my_unit,*)
+    read(my_unit,*)
+    read(my_unit,*)
     read(my_unit,*) 
     read(my_unit,*) cutoff
     read(my_unit,*)
     read(my_unit,*) temp_room
-    read(my_unit,*)
-    read(my_unit,*)
-    read(my_unit,*)
     read(my_unit,*)
     read(my_unit,*) temp_init
     read(my_unit,*)
@@ -268,10 +291,14 @@ subroutine Read_parameters(params_file, nparts, geometry, density, mass, sigma, 
     read(my_unit,*) integrator
     read(my_unit,*) 
     read(my_unit,*) time_step
+    read(my_unit,*)
+    read(my_unit,*) init_steps
     read(my_unit,*) 
     read(my_unit,*) steps
     read(my_unit,*) 
     read(my_unit,*) measure_steps
+    read(my_unit,*)
+    read(my_unit,*) traj_steps
     read(my_unit,*)
     read(my_unit,*) boxes
     read(my_unit,*)
@@ -291,34 +318,4 @@ subroutine Read_parameters(params_file, nparts, geometry, density, mass, sigma, 
 
 end subroutine Read_parameters
 
-! gofr input file generator
-subroutine gofr_params(steps,measure_steps,nparts,box_l,in_rho,boxes,outfile3,outfile4)
-
-    implicit none
-    integer, intent(in) :: steps, measure_steps, nparts, boxes
-    double precision, intent(in) :: box_l, in_rho
-    character(len=80), intent(in) :: outfile3, outfile4
-
-
-    open(10,file="gofr_params.txt")
-    write(10,*) steps/measure_steps ! number of configurations
-    write(10,*) nparts ! particles
-    write(10,*) box_l  ! simulation box length
-    write(10,*) in_rho ! density (g/cm^3)
-    write(10,*) boxes ! number of boxes of th histogram
-    write(10,*) outfile3 ! gofr.f90 datafile
-    write(10,*) outfile4 ! gofr.f90 output file
-    write(10,*) "**********************************"
-    write(10,*) "configurations"
-    write(10,*) "number of particles"
-    write(10,*) "simulation box length (A)"
-    write(10,*) "density (g/cm^3)"
-    write(10,*) "number of boxes of the histogram"
-    write(10,*) "data file"
-    write(10,*) "output file"
-    close(10)
-
-    return
-
-end subroutine gofr_params
 !**********************************************************************************************************************************!

@@ -8,9 +8,9 @@ OTHERDIR_RESULTS=../Results/Data
 
 OTHERDIR_FIG=../Results/Figures
 
-MOD_ORDENADOS=../Code/Modules/Constants_module.f90 ../Code/Modules/Pbc_module.f90 ../Code/Modules/Initial_state_module.f90 ../Code/Modules/Forces_module.f90 ../Code/Modules/Integrator_module.f90
+MOD_ORDENADOS=../Code/Modules/Constants_module.f90 ../Code/Modules/Pbc_module.f90 ../Code/Modules/Initial_state_module.f90 ../Code/Modules/Forces_module.f90 ../Code/Modules/Integrator_module.f90 ../Code/Modules/Gofr_module.f90
 
-OBJS= $(OTHERDIR_MAIN)/paralel.o $(OTHERDIR_MAIN)/constantes.o $(OTHERDIR_MAIN)/initial_state.o $(OTHERDIR_MAIN)/pbc.o $(OTHERDIR_MAIN)/forces.o $(OTHERDIR_MAIN)/integrator.o $(OTHERDIR_MAIN)/main.o
+OBJS= $(OTHERDIR_MAIN)/constantes.o $(OTHERDIR_MAIN)/initial_state.o $(OTHERDIR_MAIN)/pbc.o $(OTHERDIR_MAIN)/forces.o $(OTHERDIR_MAIN)/integrator.o $(OTHERDIR_MAIN)/gofr.o $(OTHERDIR_MAIN)/main.o
 
 #----------------------------------------------------------------------------------------------------------------------------------#
 
@@ -30,21 +30,11 @@ OBJS= $(OTHERDIR_MAIN)/paralel.o $(OTHERDIR_MAIN)/constantes.o $(OTHERDIR_MAIN)/
 all: compile run statistics move clean
 
 ## compile   : compile the fortran code.
-compile: paralel constantes initial_state pbc forces integrator main gofr program program_gofr
+compile: constantes initial_state pbc forces integrator gofr main program
 
 constantes: $(OTHERDIR_MOD)/Constants_module.f90
 	@gfortran -c $(OTHERDIR_MOD)/Constants_module.f90 -o $(OTHERDIR_MAIN)/constantes.o
 
-#------------------------------------------------------
-#------------------------------------------------------
-#------------------------------------------------------
-#------------------------------------------------------
-paralel: $(OTHERDIR_MOD)/paralel.f90
-	@gfortran -c $(OTHERDIR_MOD)/paralel.f90 -o $(OTHERDIR_MAIN)/paralel.o 
-#------------------------------------------------------
-#------------------------------------------------------
-#------------------------------------------------------
-#------------------------------------------------------
 initial_state: $(OTHERDIR_MOD)/Initial_state_module.f90 $(OTHERDIR_MOD)/Constants_module.f90
 	@gfortran -c $(OTHERDIR_MOD)/Initial_state_module.f90 -o $(OTHERDIR_MAIN)/initial_state.o
 
@@ -57,22 +47,18 @@ forces: $(OTHERDIR_MOD)/Forces_module.f90 $(OTHERDIR_MOD)/Pbc_module.f90 $(OTHER
 integrator: $(OTHERDIR_MOD)/Integrator_module.f90 $(OTHERDIR_MOD)/Forces_module.f90 $(OTHERDIR_MOD)/Pbc_module.f90 $(OTHERDIR_MOD)/Constants_module.f90
 	@gfortran -c $(OTHERDIR_MOD)/Integrator_module.f90 -o $(OTHERDIR_MAIN)/integrator.o
 
-main: $(OTHERDIR_MAIN)/Main.f90 $(MOD_ORDENADOS)
-	@mpif90 -g -o $(OTHERDIR_MAIN)/main.o $(OTHERDIR_MAIN)/Main.f90
+gofr: $(OTHERDIR_MOD)/Gofr_module.f90 $(OTHERDIR_MOD)/Integrator_module.f90 $(OTHERDIR_MOD)/Forces_module.f90 $(OTHERDIR_MOD)/Pbc_module.f90 $(OTHERDIR_MOD)/Constants_module.f90
+	@gfortran -c $(OTHERDIR_MOD)/Gofr_module.f90 -o $(OTHERDIR_MAIN)/gofr.o
 
-gofr: $(OTHERDIR_MAIN)/Gofr.f90
-	@gfortran -c $(OTHERDIR_MAIN)/Gofr.f90 -o $(OTHERDIR_MAIN)/gofr.o
+main: $(OTHERDIR_MAIN)/Main.f90 $(MOD_ORDENADOS)
+	@gfortran -c $(OTHERDIR_MAIN)/Main.f90 -o $(OTHERDIR_MAIN)/main.o
 	
 program: $(OBJS)
-	@mpirun -np 4 program.exe $(OBJS)
-
-program_gofr: $(OTHERDIR_MAIN)/gofr.o
-	@gfortran -o program_gofr.exe $(OTHERDIR_MAIN)/gofr.o
+	@gfortran -o program.exe $(OBJS)
 
 ## run       : run the fortran code.
 run: 
 	@time ./program.exe
-	@./program_gofr.exe
 
 ## statistics: realize the statistical analysis and the figures. You will be asked some questions.
 .PHONY: statistics
@@ -91,9 +77,10 @@ move:
 .PHONY: clean
 clean:
 	@rm -f $(OTHERDIR_MAIN)/*.o
+	@rm -f $(OTHERDIR_MAIN)/*.mod
+	@rm -f $(OTHERDIR_MOD)/*.mod
 	@rm -f *.exe
 	@rm -f *.mod
-	@rm -f gofr_params.txt
 
 ## clean_all : remove the same than clean and, additionally, the results and figures (the repository returns to its original state).
 .PHONY: clean_all
@@ -101,7 +88,8 @@ clean_all:
 	@rm -f $(OTHERDIR_RESULTS)/*
 	@rm -f $(OTHERDIR_FIG)/*
 	@rm -f $(OTHERDIR_MAIN)/*.o
-	@rm -f gofr_params.txt
+	@rm -f $(OTHERDIR_MAIN)/*.mod
+	@rm -f $(OTHERDIR_MOD)/*.mod
 	@rm -f *.dat
 	@rm -f *.xyz
 	@rm -f *.png
