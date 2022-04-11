@@ -12,7 +12,7 @@ def read_params(filename):
 
         i = 0
         for line in lines:
-            if "Number of Steps:" in line:
+            if "Number of Steps (dynamics):" in line:
                 # steps = number of time steps
                 steps = int(lines[i +1])
 

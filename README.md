@@ -30,7 +30,8 @@
     <li><a href="#Usage">Usage</a></li>
     <li><a href="#wiki">Wiki</a></li>
     <li><a href="#Distribution-of-tasks">Distribution of tasks</a></li>
-    <li><a href="#contributing">Contributing</a></li>
+    <li><a href="##FAQs">FAQs</a></li>
+   <li><a href="#contributing">Contributing</a></li>
   </ol>
 </details>
 
@@ -113,6 +114,13 @@ Project coordinator: Àlex Teruel
 - Makefile: Joint work
 
 The joint work tasks will be carried out (to a greater extent) by those members who are more advanced in their corresponding tasks.
+
+<!-- FAQs -->
+## FAQs
+
+### What is that paralel file? Wasn't the program a serie algorithm?
+
+Paralel directory is a program that uses mpi, so you have a paralelize version of the program in this file.
 
 
 <!-- CONTRIBUTING -->
