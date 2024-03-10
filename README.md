@@ -8,4 +8,4 @@ Rocio Aragoneses  Visualització i estadística
 
 Emma Valdés          Inputs/integració
 
-Paula Sierra             Coordinació i integració de tot el codi
+**Paula Sierra**             Coordinació i integració de tot el codi
