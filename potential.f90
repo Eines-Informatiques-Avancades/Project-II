@@ -1,4 +1,5 @@
 module Forces_and_Energies
+use pbc_mod 
 contains
         subroutine Pressure (positions,boxsize,cutoff,temp,press)
                 !This function calculates the pressure done by a number of particles (given by the number of position elements) in a
@@ -45,7 +46,7 @@ contains
         volume= boxsize**3.d0
         npart= int(size(positions,dim=2))
 
-
+        call PBC(positions, boxsize, npart)
         !Force between particles:
         do i=1,npart-1
                 do j=i+1,npart
@@ -54,17 +55,7 @@ contains
                         r_ij(2,1)=positions(2,i)-positions(2,j)
                         r_ij(1,1)=positions(3,i)-positions(3,j)
 
-                        !HERE WE SHOULD APPLY BOUNDARY CONDITIONS TO THE DISTANCES
-                        !WE NEED TO CALL THE PBC MODULE 
-                        !IN THEIR WORK THEY USE: call pbc(rij, lenth)
-                        ! tHE CODE IS:
                         
-                        if (positions(j,i) > (boxsize/2.d0)) then
-                                positions(j,i) = positions(j,i) - boxsize
-                        else if (positions(j,i) <-(boxsize/2.d0)) then
-                                 positions(j,i) = positions(j,i) + boxsize
-                        end if
-
                         !THIS WAY WE MAKE SURE THAT r_ij is inside our box
 
                         !Module of r_ij
@@ -125,7 +116,7 @@ contains
                 Double precision :: d_ij
                 Integer ::  npart,i,j
 
-                
+                call PBC(positions, boxsize, npart)
                 vdw_force=0.0
                 npart= int(size(positions,dim=2))
 
@@ -135,19 +126,6 @@ contains
                         r_ij(1,1)=positions(1,i)-positions(1,j)
                         r_ij(2,1)=positions(2,i)-positions(2,j)
                         r_ij(1,1)=positions(3,i)-positions(3,j)
-
-                        !HERE WE SHOULD APPLY BOUNDARY CONDITIONS TO THE DISTANCES
-                        !WE NEED TO CALL THE PBC MODULE 
-                        !IN THEIR WORK THEY USE: call pbc(rij, lenth)
-                        ! tHE CODE IS:
-
-                        if (positions(j,i) > (boxsize/2.d0)) then
-                                positions(j,i) = positions(j,i) - boxsize
-                        else if (positions(j,i) <-(boxsize/2.d0)) then
-                                 positions(j,i) = positions(j,i) + boxsize
-                        end if
-
-                        !THIS WAY WE MAKE SURE THAT r_ij is inside our box
 
                         !Module of r_ij
 
@@ -212,6 +190,8 @@ contains
 
                 potentialEn=0.0
                 npart= int(size(positions,dim=2))
+
+                call PBC(positions, boxsize, npart)
                 do i=1,npart-1
                 do j=i+1,npart
                         !Distance between particles:
@@ -219,17 +199,7 @@ contains
                         r_ij(2,1)=positions(2,i)-positions(2,j)
                         r_ij(1,1)=positions(3,i)-positions(3,j)
 
-                        !HERE WE SHOULD APPLY BOUNDARY CONDITIONS TO THE DISTANCES
-                        !WE NEED TO CALL THE PBC MODULE 
-                        !IN THEIR WORK THEY USE: call pbc(rij, lenth)
-                        ! tHE CODE IS:
-
-                        if (positions(j,i) > (boxsize/2.d0)) then
-                                positions(j,i) = positions(j,i) - boxsize
-                        else if (positions(j,i) <-(boxsize/2.d0)) then
-                                 positions(j,i) = positions(j,i) + boxsize
-                        end if
-
+                       
                         !THIS WAY WE MAKE SURE THAT r_ij is inside our box
 
                         !Module of r_ij
