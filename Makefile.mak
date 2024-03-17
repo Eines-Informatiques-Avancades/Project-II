@@ -31,10 +31,6 @@ run: $(EXE)
 clean:
 	rm -f $(OBJS) *.mod
 
-# Create a .tgz with .f90 files and Makefile
-pack:
-	tar czvf $(EXE).tgz $(SRCS) Makefile
-
 # See the variables used
 print:
 	@echo "FC = $(FC)"
@@ -50,6 +46,5 @@ help:
 	@echo "  make all    : Compiles the program $(EXE)"
 	@echo "  make run    : Runs the program $(EXE)"
 	@echo "  make clean  : Deletes files .o and .mod"
-	@echo "  make pack   : Creates a .tgz with the source files and the Makefile"
 	@echo "  make print  : Shows the Makefile variables used"
 	@echo "  make help   : Shows this menu"
