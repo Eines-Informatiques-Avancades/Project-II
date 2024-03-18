@@ -60,7 +60,7 @@ make help
 ## Authors
 
 * **Quim Badosa |** Forces
-* **Guillem Arasa |** Initial and boundary conditions)
+* **Guillem Arasa |** Initial and boundary conditions
 * **Rocío Aragoneses |**  Statistics and visualization
 * **Emma Valdés |** I/O and integration
 * **Paula Sierra |** Coordination
