@@ -59,7 +59,7 @@ make help
 
 ## Authors
 
-* **Quim Badosa |** Forces
+* <a href="https://github.com/Qbadosfe"><img src="https://avatars.githubusercontent.com/u/162143734?v=4" title="Qbadosfe" width="50" height="50"></a> **Quim Badosa |** Forces
 * **Guillem Arasa |** Initial and boundary conditions
 * **Rocío Aragoneses |**  Statistics and visualization
 * **Emma Valdés |** I/O and integration
