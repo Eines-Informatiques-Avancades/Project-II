@@ -1,5 +1,5 @@
 <h1 align="center">
-  <a name="logo" href="https://web.ub.edu/web/estudis/w/masteruniversitari-md308"><img src="https://www.google.com/url?sa=i&url=https%3A%2F%2Fweb.ub.edu%2Fweb%2Factualitat%2Fw%2Fla-ub-presenta-nova-imatge-corporativa&psig=AOvVaw2j8ueHhY_AkPv2G9oyiiR6&ust=1710806148218000&source=images&cd=vfe&opi=89978449&ved=0CBMQjRxqFwoTCIDA09e__IQDFQAAAAAdAAAAABAT" alt="UB" width="200"></a>
+  <a name="logo" href="https://web.ub.edu/web/estudis/w/masteruniversitari-md308"><img src="https://web.ub.edu/documents/2710030/4734497/logo_UB_nou.jpg_ca.jpg/fbe1020f-8346-2e48-247d-cde35b5e38fc?t=1677492326543" alt="UB" width="200"></a>
   <br>
   Molecular Dynamics Simulation of a Van der Waals Gas
 </h1>
