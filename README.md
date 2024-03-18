@@ -59,11 +59,11 @@ make help
 
 ## Authors
 
-* **Quim Badosa |** Forces
-* **Guillem Arasa |** Initial and boundary conditions)
-* **Rocío Aragoneses |**  Statistics and visualization
-* **Emma Valdés |** I/O and integration
-* **Paula Sierra |** Coordination
+* <a href="https://github.com/Qbadosfe"><img src="https://avatars.githubusercontent.com/u/162143734?v=4" title="Qbadosfe" width="25" height="25"></a> **Quim Badosa |** Forces
+* <a href="https://github.com/guillemares"><img src="https://avatars.githubusercontent.com/u/144935605?v=4" title="guillemares" width="25" height="25"></a> **Guillem Arasa |** Initial and boundary conditions
+* <a href="https://github.com/Qbadosfe"><img src="https://avatars.githubusercontent.com/u/162143734?v=4" title="Rocio" width="25" height="25"></a> **Rocío Aragoneses |**  Statistics and visualization
+* <a href="https://github.com/evaldesmartin"><img src="https://avatars.githubusercontent.com/u/125901837?v=4" title="evaldesmartin" width="25" height="25"></a> **Emma Valdés |** I/O and integration
+* <a href="https://github.com/psierrva"><img src="https://avatars.githubusercontent.com/u/162144063?v=4" title="psierrva" width="25" height="25"></a> **Paula Sierra |** Coordination
 
 ## Version History
 
