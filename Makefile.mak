@@ -43,8 +43,8 @@ print:
 # Help menu of the Makefile
 help:
 	@echo "Available options:"
-	@echo "  make all    : Compiles the program $(EXE)"
-	@echo "  make run    : Runs the program $(EXE)"
-	@echo "  make clean  : Deletes files .o and .mod"
-	@echo "  make print  : Shows the Makefile variables used"
-	@echo "  make help   : Shows this menu"
+	@echo "  make -f Makefile.mak all    : Compiles the program $(EXE)"
+	@echo "  make -f Makefile.mak run    : Runs the program $(EXE)"
+	@echo "  make -f Makefile.mak clean  : Deletes files .o and .mod"
+	@echo "  make -f Makefile.mak print  : Shows the Makefile variables used"
+	@echo "  make -f Makefile.mak help   : Shows this menu"
