@@ -9,7 +9,8 @@ contains
 
     subroutine initial_positions(N, L, position)
         implicit none
-        integer, intent(in) :: N, L
+        integer, intent(in) :: N
+        real*8, intent(in) :: L
         real(8), dimension(N,3), intent(out) :: position
         real(8) :: a
         integer :: i, j, k, M
@@ -31,8 +32,8 @@ contains
     ! Subrutina para leer los parametros de entrada: N, L, T
     subroutine input_parameters(N, L, T)
         implicit none
-        integer, intent(out) :: N, L
-        real(8), intent(out) :: T
+        integer, intent(out) :: N
+        real(8), intent(out) :: T,L
         integer :: i
         character(len=20) :: filename
         character(len=20) :: line
@@ -48,7 +49,7 @@ contains
                 case('N')
                     N = int(value)
                 case('L')
-                    L = int(value)
+                    L = dble(value)
                 case('T')
                     T = value
                 case default
@@ -99,8 +100,8 @@ contains
 
     subroutine main
         implicit none
-        integer :: N, L
-        real(8) :: T
+        integer :: N
+        real(8) :: T,L
         integer :: i
         real(8), dimension(:,:), allocatable :: position
 
