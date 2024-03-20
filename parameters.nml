@@ -1,0 +1,14 @@
+&PARAMS
+
+  ! needed for the simulation 
+  n_steps = 5000                ! Number of simulation steps
+  dt = 0.025,                   ! Timestep 
+  n_particles = 64,             ! Number of particles
+  L = 10.,                      ! Size of simulation box
+  temperature = 300,            ! Temperature 
+  cutoff = 2.,                  ! cutoff for interactions, can't recall what values are acceptable/good
+  ! I/O variables
+  simulation_name = "simulation",    ! Simulation name
+
+/
+

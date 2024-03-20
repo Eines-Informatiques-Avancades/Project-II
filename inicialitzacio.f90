@@ -24,7 +24,8 @@ contains
         !   None
 
         implicit none
-        integer, intent(in) :: N, L
+        integer, intent(in) :: N
+        real*8, intent(in) :: L
         real(8), dimension(N,3), intent(out) :: position
         real(8) :: a
         integer :: i, j, k, M
@@ -56,8 +57,8 @@ contains
         !   T   (real(8), intent(out)):  Temperature of the system
 
         implicit none
-        integer, intent(out) :: N, L
-        real(8), intent(out) :: T
+        integer, intent(out) :: N
+        real(8), intent(out) :: T,L
         integer :: i
         character(len=20) :: filename
         character(len=20) :: line
@@ -144,8 +145,8 @@ contains
         !   None
 
         implicit none
-        integer :: N, L
-        real(8) :: T
+        integer :: N
+        real(8) :: T,L
         integer :: i
         real(8), dimension(:,:), allocatable :: position
 

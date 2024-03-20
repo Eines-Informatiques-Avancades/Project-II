@@ -44,16 +44,20 @@ The different modules that can be found in this Repo are:
 
 ### Executing program
 
-Run the `Makefile.mak` script.
+1. Run the `Makefile.mak` script.
 ```
 make -f Makefile.mak
+```
+2. Execute the output program.
+```
+./calcular
 ```
 
 ## Help
 
 The `Makefile.mak` script has a help menu that can be accessed running the following command:
 ```
-make help
+make -f Makefile.mak help
 ```
 
 ## Authors
