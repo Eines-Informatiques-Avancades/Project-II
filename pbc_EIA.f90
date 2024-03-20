@@ -22,4 +22,6 @@ contains
         end do
     end subroutine PBC
 
+    ! a les periodic boundary conditions afegir la convencio de minima imatge (L/2)
+
 end module pbc_mod

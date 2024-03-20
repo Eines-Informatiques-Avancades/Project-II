@@ -2,12 +2,27 @@
 ! This program implements the initial positions of the particles,
 ! the initial velocities.
 
-! Subrutina inicializar posiciones en una red cubica
 module initial_positions_module
     implicit none
+    public :: initial_positions
+    public :: input_parameters
+    public :: initial_velocities
+    public :: main
 contains
 
     subroutine initial_positions(N, L, position)
+        ! 
+        ! This subroutine initializes the positions of the particles
+        ! in a cubic lattice.
+
+        ! Args:
+        !   N           (integer, intent(in)):  Number of particles
+        !   L           (integer, intent(in))  Length of the sides of the box
+        !   position    (real(8), dimension(N,3), intent(out)):  Array with the positions of the particles
+
+        ! Returns:
+        !   None
+
         implicit none
         integer, intent(in) :: N, L
         real(8), dimension(N,3), intent(out) :: position
@@ -28,8 +43,18 @@ contains
         end do
     end subroutine initial_positions
 
-    ! Subrutina para leer los parametros de entrada: N, L, T
     subroutine input_parameters(N, L, T)
+        !
+        ! This subroutine reads the input parameters from a file.
+        ! 
+        ! Args:
+        !   None   
+        ! 
+        ! Returns:
+        !   N   (integer, intent(out)):  Number of particles
+        !   L   (integer, intent(out)):  Length of the sides of the box
+        !   T   (real(8), intent(out)):  Temperature of the system
+
         implicit none
         integer, intent(out) :: N, L
         real(8), intent(out) :: T
@@ -58,8 +83,18 @@ contains
         close(1)
     end subroutine input_parameters
 
-    ! Initial velocities
     subroutine initial_velocities(N, T, velocity)
+        !
+        ! This subroutine initializes the velocities of the particles
+        ! using a Gaussian distribution.
+        !
+        ! Args:
+        !   N           (integer, intent(in)):  Number of particles
+        !   T           (real(8), intent(in)):  Temperature of the system
+        !
+        ! Returns:
+        !   velocity    (real(8), dimension(N,3), intent(out)):  Array with the velocities of the particles
+
         implicit none
         integer, intent(in) :: N
         real(8), intent(in) :: T
@@ -98,6 +133,15 @@ contains
     end subroutine initial_velocities
 
     subroutine main
+        !
+        ! This subroutine is the main routine of the initializations.
+        !
+        ! Args:
+        !   None
+        !
+        ! Returns:
+        !   None
+
         implicit none
         integer :: N, L
         real(8) :: T
