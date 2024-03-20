@@ -55,9 +55,9 @@ contains
                         r_ij(2,1)=positions(2,i)-positions(2,j)
                         r_ij(3,1)=positions(3,i)-positions(3,j)
 
-                        call minimum_image(r_ij(1,1), L)
-                        call minimum_image(r_ij(2,1), L)
-                        call minimum_image(r_ij(3,1), L)
+                        call minimum_image(r_ij(1,1), boxsize)
+                        call minimum_image(r_ij(2,1), boxsize)
+                        call minimum_image(r_ij(3,1), boxsize)
 
                         !Module of r_ij
 
