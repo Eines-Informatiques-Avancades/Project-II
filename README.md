@@ -38,26 +38,30 @@ The different modules that can be found in this Repo are:
 
 ### Installing
 
-1. Download all the files with extension `.f90` and `.mak` and place them in the same directory.
-2. Modify the compilator, optimizator and flag variables in `Makefile.mak` to your preference.
+1. Download all the files with extension `.f90` and the `Makefile` and place them in the same directory.
+2. Modify the compilator, optimizator and flag variables in `Makefile` to your preference.
 3. Modify the parameters of your simulation in `inputs.txt`.
 
 ### Executing program
 
-1. Run the `Makefile.mak` script.
+1. Run the `Makefile` script.
 ```
-make -f Makefile.mak
+make -f Makefile
 ```
-2. Execute the output program.
+2. Execute the output program
 ```
-./calcular
+./a.out
+```
+or write
+```
+make run
 ```
 
 ## Help
 
-The `Makefile.mak` script has a help menu that can be accessed running the following command:
+The `Makefile` script has a help menu that can be accessed running the following command:
 ```
-make -f Makefile.mak help
+make help
 ```
 
 ## Authors
