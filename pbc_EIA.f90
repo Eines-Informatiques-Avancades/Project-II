@@ -16,7 +16,7 @@ contains
         ! Returns: 
         !   position:       (N,3): array with the positions of the particles with the PBC applied
 
-        double precision, dimension(:,:), intent(inout) :: position
+        double precision, dimension(:,:), allocatable, intent(inout) :: position
         double precision, intent(in) :: L
         integer :: i, j, M, N
         double precision :: center
