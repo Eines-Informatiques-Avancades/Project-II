@@ -80,6 +80,7 @@ contains
                     print *, 'Error: unknown parameter'
             end select
         end do
+        
         close(1)
     end subroutine input_parameters
 
