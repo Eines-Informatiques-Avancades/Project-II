@@ -5,16 +5,6 @@ module pbc_mod
 contains
 
     subroutine PBC(position, L, N)
-        !
-        ! This subroutine applies the periodic boundary conditions to the positions of the particles,
-        ! so that the particles are always inside the box. The box is centered at the origin.
-        ! 
-        ! Args:
-        !   position:       (N,3): array with the positions of the particles
-        !   L:              double precision with the size of the box
-        !
-        ! Returns: 
-        !   position:       (N,3): array with the positions of the particles with the PBC applied
 
         double precision, dimension(:,:), allocatable, intent(inout) :: position
         double precision, intent(in) :: L
