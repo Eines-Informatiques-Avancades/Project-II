@@ -4,7 +4,7 @@ module pbc_mod
     public :: minimum_image
 contains
 
-    subroutine PBC(position, L)
+    subroutine PBC(position, L, N)
         !
         ! This subroutine applies the periodic boundary conditions to the positions of the particles,
         ! so that the particles are always inside the box. The box is centered at the origin.
