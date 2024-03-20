@@ -63,18 +63,18 @@ contains
         character(len=20) :: line
         real :: value
 
-        filename = 'input.dat'
+        filename = 'parameters.nml'
         open(unit=1, file=filename, status='old', action='read')
 
-        do i= 1, 3
+        do i= 1, 12
             read(1, *) line, value
             line = adjustl(line)
             select case(line)
-                case('N')
+                case('n_particles =')
                     N = int(value)
-                case('L')
+                case('L =')
                     L = int(value)
-                case('T')
+                case('temperature =')
                     T = value
                 case default
                     print *, 'Error: unknown parameter'
