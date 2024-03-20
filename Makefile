@@ -4,13 +4,13 @@ OPT = -O3
 FLAGS = -Wall -Wextra
 
 # List of source files .f90
-SRCS = $(wildcard *.f90)
+SRCS = inicialitzacio.f90 pbc_EIA.f90 potential.f90 integrators.f90 readers_mod.f90 main.f90
 
 # List of object files .o
 OBJS = $(SRCS:.f90=.o)
 
 # Executable name
-EXE = calcular
+EXE = a.out
 
 # Files compilation
 all: $(EXE)
@@ -28,8 +28,12 @@ run: $(EXE)
 	./$(EXE)
 
 # Delete files .o and .mod
-clean:
+tidy:
 	rm -f $(OBJS) *.mod
+
+# Delete files .o and .mod
+clean:
+	rm -f $(OBJS) *.mod *.dat *.out
 
 # See the variables used
 print:
@@ -43,8 +47,9 @@ print:
 # Help menu of the Makefile
 help:
 	@echo "Available options:"
-	@echo "  make -f Makefile.mak all    : Compiles the program $(EXE)"
-	@echo "  make -f Makefile.mak run    : Runs the program $(EXE)"
-	@echo "  make -f Makefile.mak clean  : Deletes files .o and .mod"
-	@echo "  make -f Makefile.mak print  : Shows the Makefile variables used"
-	@echo "  make -f Makefile.mak help   : Shows this menu"
+	@echo "  make all    : Compiles the program $(EXE)"
+	@echo "  make run    : Runs the program $(EXE)"
+	@echo "  make tidy   : Deletes files .o and .mod"
+	@echo "  make clean  : Deletes files .o, .mod, .dat and .out"
+	@echo "  make print  : Shows the Makefile variables used"
+	@echo "  make help   : Shows this menu"
