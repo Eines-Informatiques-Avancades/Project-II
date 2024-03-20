@@ -3,7 +3,7 @@ module pbc_mod
 contains
 
     subroutine PBC(position, L, N)
-        double precision, dimension(:,:), intent(inout) :: position
+        double precision, dimension(:,:), allocatable, intent(inout) :: position
         double precision, intent(in) :: L
         integer :: i, j, M, N
 
