@@ -53,10 +53,11 @@ contains
                         !Distance between particles:
                         r_ij(1,1)=positions(1,i)-positions(1,j)
                         r_ij(2,1)=positions(2,i)-positions(2,j)
-                        r_ij(1,1)=positions(3,i)-positions(3,j)
+                        r_ij(3,1)=positions(3,i)-positions(3,j)
 
-                        
-                        !THIS WAY WE MAKE SURE THAT r_ij is inside our box
+                        call minimum_image(r_ij(1,1), L)
+                        call minimum_image(r_ij(2,1), L)
+                        call minimum_image(r_ij(3,1), L)
 
                         !Module of r_ij
 
