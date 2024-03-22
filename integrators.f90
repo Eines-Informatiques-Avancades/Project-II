@@ -44,12 +44,17 @@ contains
     real*8, intent(in) :: dt, cutoff,L
     real*8, allocatable, dimension(:,:), intent(inout) :: positions, velocities 
     real*8, allocatable, dimension(:,:) :: forces
-    integer :: N, i, unit_dyn,j
+    real*8 :: KineticEn, PotentialEn, TotalEn, Tinst, press
+    integer :: N, i, unit_dyn,j,unit_ene,unit_tem,unit_pre
     real*8 :: time
     N = size(positions, dim=1)
     allocate(forces(N,3))
     ! open files
     open(newunit=unit_dyn,file = 'dynamics.dat',status="REPLACE")
+    open(newunit=unit_ene,file = 'energies.dat',status="REPLACE")
+    open(newunit=unit_tem,file = 'tempinst.dat',status="REPLACE")
+    open(newunit=unit_pre,file = 'pressure.dat',status="REPLACE")
+
     do i=1,N
         write(unit_dyn,'(3(f8.3,x))') positions(i,:)
     enddo
@@ -58,6 +63,18 @@ contains
     do i=1,N_steps 
         time = i*dt
         call vv_integrator(positions,velocities,forces,cutoff,L,dt)
+
+        ! compute kinetic, potential and total energies
+        call kineticE(velocities,KineticEn)
+        call potentialE(positions,cutoff,L,PotentialEn)
+        TotalEn=KineticEn+PotentialEn
+
+        ! compute Instantaneous temperature
+        call Tempinst(KineticEn,N,Tinst)
+
+        ! compute pressure
+        call Pressure (positions,L,cutoff,Tinst,press)
+
         ! write variables to output - positions, energies
         if (MOD(i,N_save_pos).EQ.0) then
             do j=1,N 
@@ -65,9 +82,19 @@ contains
             enddo 
             write(unit_dyn,'(A)') " "
         endif
+        if (MOD(i,N_save_pos).EQ.0) then
+            do j=1,N 
+                write(unit_ene,*) time, KineticEn, PotentialEn, TotalEn
+                write(unit_tem,*) time, Tinst
+                write(unit_pre,*) time, press
+            enddo
+        endif
     enddo
     deallocate(forces)
     close(unit_dyn)
+    close(unit_ene)
+    close(unit_tem)
+    close(unit_pre)
     end subroutine main_loop
 end module integrators
 
