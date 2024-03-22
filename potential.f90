@@ -264,6 +264,34 @@ contains
                 enddo
         end subroutine kineticE
 
+        subroutine Tempinst (KE,npart,Tinst)
+                
+                ! SUbroutine to calculate the instant Temperature
+                ! Kinetic energy has to be called earlier, so Kinetic energy and number of particles are the parameters of this
+                ! function
+
+                implicit none
+                
+                !ARGUMENTS
+                        !Kinetic energy. double precision
+                        !Number of particles. Integer
+
+                        Double precision, intent(in) :: KE
+                        Integer, intent(in) :: npart
+
+                        !InstantTemperature, Tinst
+                        
+                        Double precision :: Tinst
+
+                        
+                        Tinst =(2.d0/(3.d0*real(npart)))*ke
+
+                  end subroutine Tempinst
+
+
+
+        
+
 
 end module Forces_and_Energies
 
