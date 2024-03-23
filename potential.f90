@@ -236,7 +236,7 @@ contains
                    !Velocities : Velocities of the particles DIM= (d,npart)  (d usually=3)
                    !KineticE: Total kinetic energy
 
-                Double precision,allocatable, dimension(:,:) :: velocities
+                Double precision,allocatable, dimension(:,:),intent(in) :: velocities
                 Double precision :: KineticEn
 
                  !VARIABLES:
@@ -245,7 +245,7 @@ contains
                     !f_ij: Force between the particles
                     !npart: particle number. Integer
 
-                Double precision, dimension(3,1) :: v_ij
+                ! Double precision, dimension(3,1) :: v_ij
                 Double precision:: e_ij
                 Double precision :: vel_ij
                 Integer ::  npart,i
@@ -256,7 +256,8 @@ contains
 
                 do i=1,npart
 
-                        vel_ij=((v_ij(1,1)**2.d0)+(v_ij(2,1)**2.d0)+(v_ij(3,1)**2.d0))**(1.d0/2.d0)
+                        ! Paula: Corrected the vector from v_ij(1/2/3,1) to velocities(1/2/3,i) to avoid a 0
+                        vel_ij=((velocities(1,i)**2.d0)+(velocities(2,i)**2.d0)+(velocities(3,i)**2.d0))**(1.d0/2.d0)
                         
                         e_ij= (1.d0/2.d0)*vel_ij**2.d0
 
