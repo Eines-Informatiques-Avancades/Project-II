@@ -60,7 +60,7 @@ Alternatively, you can run the program with
 and generate your plots writing
 ```
 gnuplot visualization.gn
-``
+```
 
 ## Help
 
