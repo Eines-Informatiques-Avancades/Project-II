@@ -75,10 +75,12 @@ contains
                    end do
           end do
           ! Paula: I added a ".d0" to the 10 because, if not added, is considered as integer and gives 0.
-          press= (real(npart)*(1.38*10.d0**(-23))*temp)/volume + (1.d0/(3.d0*volume))*Virialterm
-          
+          !press= (real(npart)*(1.38*10.d0**(-23))*temp)/volume + (1.d0/(3.d0*volume))*Virialterm
           ! Pressure units are J/m³
           ! we multiply ideal gas term *Kb=1.38*10**(-23)
+          press= (real(npart)*temp)/volume + (1.d0/(3.d0*volume))*Virialterm
+          !Pressure in reduced units
+          
           
                   
       end subroutine Pressure
