@@ -26,14 +26,15 @@ $(EXE): $(OBJS)
 # Run 
 run: $(EXE)
 	./$(EXE)
+	gnuplot visualization.gn
 
 # Delete files .o and .mod
 tidy:
 	rm -f $(OBJS) *.mod
 
-# Delete files .o and .mod
+# Delete files .o, .mod, .out and .png
 clean:
-	rm -f $(OBJS) *.mod *.dat *.out
+	rm -f $(OBJS) *.mod *.dat *.out *.png
 
 # See the variables used
 print:
@@ -50,6 +51,6 @@ help:
 	@echo "  make all    : Compiles the program $(EXE)"
 	@echo "  make run    : Runs the program $(EXE)"
 	@echo "  make tidy   : Deletes files .o and .mod"
-	@echo "  make clean  : Deletes files .o, .mod, .dat and .out"
+	@echo "  make clean  : Deletes files .o, .mod, .dat, .out and .png"
 	@echo "  make print  : Shows the Makefile variables used"
 	@echo "  make help   : Shows this menu"
