@@ -23,15 +23,13 @@ contains
         !    velocities (REAL64[3,N]) : velocities of all N partciles, in reduced units.
 
         implicit none
-        real*8, allocatable, dimension(:,:), intent(inout)      :: positions, velocities, forces
-        real*8, intent(in)                         :: cutoff, L, dt
+        real*8, allocatable, dimension(:,:), intent(inout) :: positions, velocities, forces
+        real*8, intent(in)                                 :: cutoff, L, dt
         integer :: N
         N = size(positions,dim=1)
-
         call VDW_forces(positions, L, cutoff, forces)
         positions = positions + (dt*velocities) + (0.5d0*dt*dt*forces)
         call PBC(positions, L,N)
-
         velocities = velocities + (0.5d0*dt*forces)
 
         call VDW_forces(positions, L, cutoff, forces)
@@ -45,15 +43,15 @@ contains
     real*8, allocatable, dimension(:,:), intent(inout) :: positions, velocities 
     real*8, allocatable, dimension(:,:) :: forces
     real*8 :: KineticEn, PotentialEn, TotalEn, Tinst, press
-    integer :: N, i, unit_dyn,j,unit_ene,unit_tem,unit_pre
+    integer :: N, i, j,unit_dyn=10,unit_ene=11,unit_tem=12,unit_pre=13
     real*8 :: time
     N = size(positions, dim=1)
     allocate(forces(N,3))
     ! open files
-    open(newunit=unit_dyn,file = 'dynamics.dat',status="REPLACE")
-    open(newunit=unit_ene,file = 'energies.dat',status="REPLACE")
-    open(newunit=unit_tem,file = 'tempinst.dat',status="REPLACE")
-    open(newunit=unit_pre,file = 'pressure.dat',status="REPLACE")
+    open(unit_dyn,file = 'dynamics.dat',status="REPLACE")
+    open(unit_ene,file = 'energies.dat',status="REPLACE")
+    open(unit_tem,file = 'tempinst.dat',status="REPLACE")
+    open(unit_pre,file = 'pressure.dat',status="REPLACE")
 
     do i=1,N
         write(unit_dyn,'(3(f8.3,x))') positions(i,:)
@@ -71,23 +69,17 @@ contains
 
         ! compute Instantaneous temperature
         call Tempinst(KineticEn,N,Tinst)
-
         ! compute pressure
         call Pressure (positions,L,cutoff,Tinst,press)
-
         ! write variables to output - positions, energies
         if (MOD(i,N_save_pos).EQ.0) then
             do j=1,N 
                 write(unit_dyn,'(3(e12.3,x))') positions(j,:)
             enddo 
             write(unit_dyn,'(A)') " "
-        endif
-        if (MOD(i,N_save_pos).EQ.0) then
-            do j=1,N 
-                write(unit_ene,*) time, KineticEn, PotentialEn, TotalEn
-                write(unit_tem,*) time, Tinst
-                write(unit_pre,*) time, press
-            enddo
+            write(unit_ene,'(4(e12.3,x))') time, KineticEn, PotentialEn, TotalEn
+            write(unit_tem,'(2(e12.3,x))') time, Tinst
+            write(unit_pre,'(2(e12.3,x))') time, press
         endif
     enddo
     deallocate(forces)
