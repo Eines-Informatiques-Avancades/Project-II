@@ -48,14 +48,19 @@ The different modules that can be found in this Repo are:
 ```
 make -f Makefile
 ```
-2. Execute the output program
-```
-./a.out
-```
-or write
+2. Execute the output program by running
 ```
 make run
 ```
+This also generates the final output plots.
+Alternatively, you can run the program with
+```
+./a.out
+```
+and generate your plots writing
+```
+gnuplot visualization.gn
+``
 
 ## Help
 
@@ -68,7 +73,7 @@ make help
 
 * <a href="https://github.com/Qbadosfe"><img src="https://avatars.githubusercontent.com/u/162143734?v=4" title="Qbadosfe" width="25" height="25"></a> **Quim Badosa |** Forces
 * <a href="https://github.com/guillemares"><img src="https://avatars.githubusercontent.com/u/144935605?v=4" title="guillemares" width="25" height="25"></a> **Guillem Arasa |** Initial and boundary conditions
-* <a href="https://github.com/Qbadosfe"><img src="https://avatars.githubusercontent.com/u/162143734?v=4" title="Rocio" width="25" height="25"></a> **Rocío Aragoneses |**  Statistics and visualization
+* <a href="https://github.com/rocii389"><img src="https://avatars.githubusercontent.com/u/150451845?v=4" title="rocii389" width="25" height="25"></a> **Rocío Aragoneses |**  Statistics and visualization
 * <a href="https://github.com/evaldesmartin"><img src="https://avatars.githubusercontent.com/u/125901837?v=4" title="evaldesmartin" width="25" height="25"></a> **Emma Valdés |** I/O and integration
 * <a href="https://github.com/psierrva"><img src="https://avatars.githubusercontent.com/u/162144063?v=4" title="psierrva" width="25" height="25"></a> **Paula Sierra |** Coordination
 
