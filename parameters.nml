@@ -1,12 +1,12 @@
 &PARAMS
 
   ! needed for the simulation 
-  n_steps = 5000                ! Number of simulation steps
+  n_steps = 100000                ! Number of simulation steps
   n_save_pos = 100              ! Save positions every n_save_pos steps
-  dt = 0.001,                   ! Timestep 
-  n_particles = 8,              ! Number of particles
-  L = 10.,                      ! Size of simulation box
-  temperature = 30,             ! Temperature 
+  dt = 0.0001,                   ! Timestep 
+  n_particles = 125,              ! Number of particles
+  L = 6.,                      ! Size of simulation box
+  temperature = 1.823,             ! Temperature (reduced units)
   cutoff = 2.,                  ! cutoff for interactions, can't recall what values are acceptable/good
   ! I/O variables
   simulation_name = "simulation",    ! Simulation name
