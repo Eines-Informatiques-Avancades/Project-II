@@ -38,7 +38,7 @@ The different modules that can be found in this Repo are:
 
 ### Installing
 
-1. Download all the files with extension `.f90` and the `Makefile` and place them in the same directory.
+1. Download all the files with extension `.f90`, `.gn` and the `Makefile` and place them in the same directory.
 2. Modify the compilator, optimizator and flag variables in `Makefile` to your preference.
 3. Modify the parameters of your simulation in `inputs.txt`.
 
@@ -52,15 +52,7 @@ make -f Makefile
 ```
 make run
 ```
-This also generates the final output plots.
-Alternatively, you can run the program with
-```
-./a.out
-```
-and generate your plots writing
-```
-gnuplot visualization.gn
-```
+This also generates the final output plots. Alternatively, you can run the program with `./a.out`, and generate your plots writing `gnuplot visualization.gn`.
 
 ## Help
 
