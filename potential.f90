@@ -127,6 +127,10 @@ contains
                         r_ij(2,1)=positions(i,2)-positions(j,2)
                         r_ij(3,1)=positions(i,3)-positions(j,3)
 
+                        call minimum_image(r_ij(1,1), boxsize)
+                        call minimum_image(r_ij(2,1), boxsize)
+                        call minimum_image(r_ij(3,1), boxsize)
+
                         !Module of r_ij
 
                         d_ij=dsqrt((r_ij(1,1)*r_ij(1,1))+(r_ij(2,1)*r_ij(2,1))+(r_ij(3,1)*r_ij(3,1)))
