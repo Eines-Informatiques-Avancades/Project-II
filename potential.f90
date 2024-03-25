@@ -105,7 +105,7 @@ contains
                    !VDW_force: Total interaction force                       
 
                 Double precision,allocatable, dimension(:,:),intent(inout) :: positions
-                double precision, allocatable, dimension(:,:), intent(out) :: vdw_force
+                double precision, allocatable, dimension(:,:), intent(inout) :: vdw_force
                 
                 Double precision, intent(in) :: cutoff,boxsize
 
