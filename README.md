@@ -14,6 +14,15 @@
 </div>
 <p><font size="3">
 
+<p align="center">
+  <a href="#introduction">Introduction</a> •
+  <a href="#description">Description</a> •
+  <a href="#getting-started">Getting started</a> •
+  <a href="#help">Help</a> •
+  <a href="#authors">Authors</a> •
+  <a href="#version-history">Version history</a>
+</p>
+
 ## Introduction
 
 This project consists on a simple molecular dynamics program to simulate a Van der Waals gas of particles. It allows to obtain results indicating the evolution of the energy (kinetic, potential, total), temperature and pressure.
