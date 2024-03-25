@@ -101,30 +101,17 @@ contains
         integer, intent(in) :: N
         real(8), intent(in) :: T
         real(8), dimension(N,3), intent(out) :: velocity
-        real(8) :: v, vcm(3)
         integer :: i, j
-        real(8), dimension(3) :: gaussian
-
-        call random_number(gaussian)
-        do i = 1, 3
-            vcm(i) = 0.0d0
-            do j = 1, N
-                vcm(i) = vcm(i) + gaussian(i)
+        real(8), dimension(3) :: rand
+        do i=1, N
+            do j=1, 3
+                call random_number(rand)
+                if (rand(j) > 0.5d0) then
+                    velocity(i,j) = dsqrt(T)
+                else
+                    velocity(i,j) = -dsqrt(T)
+                end if
             end do
-            vcm(i) = vcm(i) / dble(N)
-        end do
-
-        do i = 1, N
-            call random_number(gaussian)
-            do j = 1, 3
-                velocity(i,j) = gaussian(j) - vcm(j)
-            end do
-            v = 0.0d0
-            do j = 1, 3
-                v = v + velocity(i,j)**2
-            end do
-            v = sqrt(v)
-            velocity(i,:) = velocity(i,:) / v * sqrt(T)
         end do
 
         open(3, file='initial_velocities.dat')
