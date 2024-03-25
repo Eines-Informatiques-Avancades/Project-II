@@ -4,7 +4,7 @@ OPT = -O3
 FLAGS = -Wall -Wextra
 
 # List of source files .f90
-SRCS = inicialitzacio.f90 pbc_EIA.f90 potential.f90 integrators.f90 readers_mod.f90 main.f90
+SRCS = initialization.f90 pbc.f90 forces.f90 integrators.f90 readers.f90 main.f90
 
 # List of object files .o
 OBJS = $(SRCS:.f90=.o)
@@ -25,16 +25,14 @@ $(EXE): $(OBJS)
 
 # Run 
 run: $(EXE)
+	mkdir -p results
 	./$(EXE)
 	gnuplot visualization.gn
+	mv *.dat *.png ./results
 
-# Delete files .o and .mod
-tidy:
-	rm -f $(OBJS) *.mod
-
-# Delete files .o, .mod, .out and .png
+# Delete files .o, .mod and .out
 clean:
-	rm -f $(OBJS) *.mod *.dat *.out *.png
+	rm -f $(OBJS) *.mod *out
 
 # See the variables used
 print:
@@ -50,7 +48,6 @@ help:
 	@echo "Available options:"
 	@echo "  make all    : Compiles the program $(EXE)"
 	@echo "  make run    : Runs the program $(EXE)"
-	@echo "  make tidy   : Deletes files .o and .mod"
-	@echo "  make clean  : Deletes files .o, .mod, .dat, .out and .png"
+	@echo "  make clean  : Deletes files .o, .mod and .out"
 	@echo "  make print  : Shows the Makefile variables used"
 	@echo "  make help   : Shows this menu"
