@@ -1,6 +1,6 @@
 <h1 align="center">
   <a name="UB" href="https://web.ub.edu/web/estudis/w/masteruniversitari-md308"><img src="https://web.ub.edu/documents/2710030/4734497/logo_UB_nou.jpg_ca.jpg/fbe1020f-8346-2e48-247d-cde35b5e38fc?t=1677492326543" alt="UB" width="160"></a>
-  <a name="UPC" href="https://www.rediprogram.eu/wp-content/uploads/2021/08/politecnica-catalunya.png"><img src="https://www.rediprogram.eu/host-institutions/universitat-politecnica-de-catalunya/" alt="UPC" width="160"></a>
+  <a name="UPC" href="https://www.rediprogram.eu/wp-content/uploads/2021/08/politecnica-catalunya.png"><img src="https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.rediprogram.eu%2Fhost-institutions%2Funiversitat-politecnica-de-catalunya%2F&psig=AOvVaw3Kq7_KDuPa-YzbfTQKUQqH&ust=1711477047965000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCNiF4_2CkIUDFQAAAAAdAAAAABAY" alt="UPC" width="160"></a>
   <br>
   Molecular Dynamics Simulation of a Van der Waals Gas
 </h1>
