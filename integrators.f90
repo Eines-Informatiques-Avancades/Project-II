@@ -63,7 +63,7 @@ contains
 
         ! compute kinetic, potential and total energies
         call kineticE(velocities,KineticEn)
-        call potentialE(positions,cutoff,PotentialEn)
+        call potentialE(positions,cutoff,PotentialEn, boxsize=L)
         TotalEn=KineticEn+PotentialEn
 
         ! compute Instantaneous temperature

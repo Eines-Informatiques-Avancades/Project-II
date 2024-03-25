@@ -163,7 +163,7 @@ contains
 
           !!!!!!!!!!!-------------------------------------------------------------------------------
 
-          subroutine potentialE (positions,cutoff,PotentialEn)
+          subroutine potentialE (positions,cutoff,PotentialEn, boxsize)
 
                   !Subroutine to calculate the potential energy between particles using Lennard-Jones potential
 
@@ -177,7 +177,7 @@ contains
                 !PotentialE: Total potential energy
 
                 Double precision,allocatable, dimension(:,:), intent(in) :: positions
-                Double precision, intent(in) :: cutoff
+                Double precision, intent(in) :: cutoff, boxsize
                 Double precision, intent(out) :: PotentialEn
 
                  !VARIABLES:
@@ -187,7 +187,7 @@ contains
                     !npart: particle number. Integer
 
                 Double precision, dimension(3,1) :: r_ij
-                Double precision:: e_ij,d_ij2, cf2,d6,d12
+                Double precision:: e_ij,d_ij2, cf2
                 Integer ::  npart,i,j
 
                 potentialEn=0.d0
@@ -201,6 +201,9 @@ contains
                         r_ij(2,1)=positions(i,2)-positions(j,2)
                         r_ij(3,1)=positions(i,3)-positions(j,3)
 
+                        call minimum_image(r_ij(1,1), boxsize)
+                        call minimum_image(r_ij(2,1), boxsize)
+                        call minimum_image(r_ij(3,1), boxsize)
 
                         !THIS WAY WE MAKE SURE THAT r_ij is inside our box
 
@@ -209,9 +212,11 @@ contains
                         d_ij2=(r_ij(1,1)**2)+(r_ij(2,1)**2)+(r_ij(3,1)**2)
                         !Now we compare this distance with the cutoff
                         if (d_ij2 < cf2) then
-                                d6 = d_ij2*d_ij2*d_ij2 
-                                d12 = d6*d6 
-                                e_ij = 4.d0*((1.d0/d12) - (1.d0/d6)) - 4.d0*((1.d0/(cf2**6)) - (1.d0/(cf2**3)))
+                                !d6 = d_ij2*d_ij2*d_ij2 
+                                !d12 = d6*d6 
+                                !e_ij = 4.d0*((1.d0/d12) - (1.d0/d6)) - 4.d0*((1.d0/(cf2**6)) - (1.d0/(cf2**3)))
+                                e_ij = 4.d0*(1.d0/cutoff**12.d0 - 1.d0 /cutoff**6.d0)-4*(1.d0/d_ij2**6.d0-1.d0/d_ij2**3.d0)
+
                                 potentialEn = potentialEn + e_ij
                          end if
                 end do
