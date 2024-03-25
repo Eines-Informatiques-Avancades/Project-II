@@ -52,7 +52,6 @@ contains
     open(unit_ene,file = 'energies.dat',status="REPLACE")
     open(unit_tem,file = 'tempinst.dat',status="REPLACE")
     open(unit_pre,file = 'pressure.dat',status="REPLACE")
-
     do i=1,N
         write(unit_dyn,'(3(f8.3,x))') positions(i,:)
     enddo
@@ -64,7 +63,7 @@ contains
 
         ! compute kinetic, potential and total energies
         call kineticE(velocities,KineticEn)
-        call potentialE(positions,cutoff,L,PotentialEn)
+        call potentialE(positions,cutoff,PotentialEn)
         TotalEn=KineticEn+PotentialEn
 
         ! compute Instantaneous temperature
@@ -72,6 +71,7 @@ contains
         ! compute pressure
         call Pressure (positions,L,cutoff,Tinst,press)
         ! write variables to output - positions, energies
+
         if (MOD(i,N_save_pos).EQ.0) then
             do j=1,N 
                 write(unit_dyn,'(3(e12.3,x))') positions(j,:)

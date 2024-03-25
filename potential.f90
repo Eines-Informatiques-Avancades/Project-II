@@ -20,8 +20,9 @@ contains
        !Temperature: in Kelvin rea, double precision
        ! Press: Result pressure, double precision
 
-                Double precision,allocatable, dimension(:,:) :: positions
-                Double precision :: cutoff,temp,Press,boxsize
+                Double precision,allocatable, dimension(:,:), intent(in) :: positions
+                Double precision, intent(in) :: cutoff,temp,boxsize
+                Double precision, intent(out) :: press
                 
         !VARIABLES:
         !r_ij : relative position vector between pair of particles, double precision dim= (3,1)
@@ -33,20 +34,20 @@ contains
                 
                 Double precision, dimension(3,1) :: r_ij
                 Double precision, dimension(3) :: f_ij
-                Double precision :: d_ij, volume, Virialterm
+                Double precision :: d_ij, volume, Virialterm, cf2
                 Integer ::  npart,i,j
 
 
                        
 
         ! Initial values:
-        Press=0.0
-        Virialterm=0.0
+        Press=0.d0
+        Virialterm=0.d0
         !Volume and number of particles:
-        volume= boxsize**3.d0
+        volume= dble(boxsize*boxsize*boxsize)
         npart= int(size(positions,dim=1))
-
-        call PBC(positions, boxsize, npart)
+        cf2 = cutoff*cutoff
+        !call PBC(positions, boxsize, npart)
         !Force between particles:
         do i=1,npart-1
                 do j=i+1,npart
@@ -59,15 +60,15 @@ contains
                         call minimum_image(r_ij(2,1), boxsize)
                         call minimum_image(r_ij(3,1), boxsize)
 
-                        !Module of r_ij
 
-                        d_ij=((r_ij(1,1)**2.d0)+(r_ij(2,1)**2.d0)+(r_ij(3,1)**2.d0))**(1.d0/2.d0)
+                        !Computes distance squared
+                        d_ij=(r_ij(1,1)**2.d0)+(r_ij(2,1)**2.d0)+(r_ij(3,1)**2.d0)
                         !Now we compare this distance with the cutoff
 
-                        if (d_ij< cutoff) then
-                                 f_ij(1) = (48.d0 / d_ij**7 - 24.d0 / d_ij**4) * r_ij(1,1)
-                                 f_ij(2) = (48.d0 / d_ij**7 - 24.d0 / d_ij**4) * r_ij(2,1)
-                                 f_ij(3) = (48.d0 / d_ij**7 - 24.d0 / d_ij**4) * r_ij(3,1)
+                        if (d_ij< cf2) then
+                                 f_ij(1) = ((48.d0 / (d_ij**7)) -( 24.d0 / (d_ij**4))) * r_ij(1,1)
+                                 f_ij(2) = ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(2,1)
+                                 f_ij(3) = ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(3,1)
 
                          !redefine virial Term value:
                                 Virialterm = Virialterm + dot_product(r_ij(:,1),f_ij)
@@ -78,11 +79,9 @@ contains
           !press= (real(npart)*(1.38*10.d0**(-23))*temp)/volume + (1.d0/(3.d0*volume))*Virialterm
           ! Pressure units are J/m³
           ! we multiply ideal gas term *Kb=1.38*10**(-23)
-          press= (real(npart)*temp)/volume + (1.d0/(3.d0*volume))*Virialterm
+          press= (dble(npart)*temp)/volume + (1.d0/(3.d0*volume))*Virialterm
           !Pressure in reduced units
-          
-          
-                  
+             
       end subroutine Pressure
       
 
@@ -105,7 +104,9 @@ contains
                    !Cutoff: A range of interaction real double precision 
                    !VDW_force: Total interaction force                       
 
-                Double precision,allocatable, dimension(:,:),intent(inout) :: positions,vdw_force
+                Double precision,allocatable, dimension(:,:),intent(inout) :: positions
+                double precision, allocatable, dimension(:,:), intent(out) :: vdw_force
+                
                 Double precision, intent(in) :: cutoff,boxsize
 
                  !VARIABLES:
@@ -115,10 +116,11 @@ contains
                     !npart: particle number. Integer
 
                 Double precision, dimension(3,1) :: r_ij=0.d0
-                Double precision :: d_ij
+                Double precision :: d_ij,cf2
                 Integer ::  npart,i,j
                 npart= int(size(positions,dim=1))
-                call PBC(positions, boxsize, npart)
+                cf2 = cutoff*cutoff
+                vdw_force = 0.d0
                 do i=1,npart-1
                 do j=i+1,npart
                         
@@ -130,22 +132,20 @@ contains
                         call minimum_image(r_ij(1,1), boxsize)
                         call minimum_image(r_ij(2,1), boxsize)
                         call minimum_image(r_ij(3,1), boxsize)
-
                         !Module of r_ij
-
-                        d_ij=dsqrt((r_ij(1,1)*r_ij(1,1))+(r_ij(2,1)*r_ij(2,1))+(r_ij(3,1)*r_ij(3,1)))
+                        !Compute distance squared
+                        d_ij=(r_ij(1,1)*r_ij(1,1))+(r_ij(2,1)*r_ij(2,1))+(r_ij(3,1)*r_ij(3,1))
                         !Now we compare this distance with the cutoff
-
-                        if (d_ij< cutoff) then
+                        if (d_ij< cf2) then
                                  !Force made by j to i
-                                 vdw_force(i,1) = vdw_force(i,1) + (48.d0 / d_ij**7 - 24.d0 / d_ij**4) * r_ij(1,1)
-                                 vdw_force(i,2) = vdw_force(i,2) + (48.d0 / d_ij**7 - 24.d0 / d_ij**4) * r_ij(2,1)
-                                 vdw_force(i,3) = vdw_force(i,3) + (48.d0 / d_ij**7 - 24.d0 / d_ij**4) * r_ij(3,1)
+                                 vdw_force(i,1) = vdw_force(i,1) + ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(1,1)
+                                 vdw_force(i,2) = vdw_force(i,2) + ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(2,1)
+                                 vdw_force(i,3) = vdw_force(i,3) + ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(3,1)
 
                                  !Force made by i to j
-                                 vdw_force(j,1) = vdw_force(j,1) - (48.d0 / d_ij**7 - 24.d0 / d_ij**4) * r_ij(1,1)
-                                 vdw_force(j,2) = vdw_force(j,2) - (48.d0 / d_ij**7 - 24.d0 / d_ij**4) * r_ij(2,1)
-                                 vdw_force(j,3) = vdw_force(j,3) - (48.d0 / d_ij**7 - 24.d0 / d_ij**4) * r_ij(3,1)
+                                 vdw_force(j,1) = vdw_force(j,1) - ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(1,1)
+                                 vdw_force(j,2) = vdw_force(j,2) - ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(2,1)
+                                 vdw_force(j,3) = vdw_force(j,3) - ((48.d0 /( d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(3,1)
 
                          end if
                 end do
@@ -163,7 +163,7 @@ contains
 
           !!!!!!!!!!!-------------------------------------------------------------------------------
 
-          subroutine potentialE (positions,cutoff,boxsize,PotentialEn)
+          subroutine potentialE (positions,cutoff,PotentialEn)
 
                   !Subroutine to calculate the potential energy between particles using Lennard-Jones potential
 
@@ -176,9 +176,9 @@ contains
                 !Cutoff: A range of interaction real double precision
                 !PotentialE: Total potential energy
 
-                Double precision,allocatable, dimension(:,:) :: positions
-                Double precision :: cutoff,boxsize
-                Double precision :: PotentialEn
+                Double precision,allocatable, dimension(:,:), intent(in) :: positions
+                Double precision, intent(in) :: cutoff
+                Double precision, intent(out) :: PotentialEn
 
                  !VARIABLES:
                     !r_ij : relative position vector between pair of particles, double precision dim= (3,1)
@@ -187,14 +187,13 @@ contains
                     !npart: particle number. Integer
 
                 Double precision, dimension(3,1) :: r_ij
-                Double precision:: e_ij
-                Double precision :: d_ij
+                Double precision:: e_ij,d_ij2, cf2,d6,d12
                 Integer ::  npart,i,j
 
-                potentialEn=0.0
+                potentialEn=0.d0
                 npart= int(size(positions,dim=1))
-
-                call PBC(positions, boxsize, npart)
+                cf2 = cutoff*cutoff
+                !call PBC(positions, boxsize, npart)
                 do i=1,npart-1
                 do j=i+1,npart
                         !Distance between particles:
@@ -202,19 +201,17 @@ contains
                         r_ij(2,1)=positions(i,2)-positions(j,2)
                         r_ij(3,1)=positions(i,3)-positions(j,3)
 
-                       
+
                         !THIS WAY WE MAKE SURE THAT r_ij is inside our box
 
                         !Module of r_ij
 
-                        d_ij=((r_ij(1,1)**2.d0)+(r_ij(2,1)**2.d0)+(r_ij(3,1)**2.d0))**(1.d0/2.d0)
+                        d_ij2=(r_ij(1,1)**2)+(r_ij(2,1)**2)+(r_ij(3,1)**2)
                         !Now we compare this distance with the cutoff
-
-                        if (d_ij< cutoff) then
-                                 e_ij = 4*(1.d0 / d_ij**12.d0 - 1.d0 / d_ij**6.d0) 
-                                
-
-                        
+                        if (d_ij2 < cf2) then
+                                d6 = d_ij2*d_ij2*d_ij2 
+                                d12 = d6*d6 
+                                e_ij = 4.d0*((1.d0/d12) - (1.d0/d6)) - 4.d0*((1.d0/(cf2**6)) - (1.d0/(cf2**3)))
                                 potentialEn = potentialEn + e_ij
                          end if
                 end do
@@ -279,7 +276,7 @@ contains
 
                         !InstantTemperature, Tinst
                         
-                        Double precision :: Tinst
+                        Double precision, intent(out) :: Tinst
 
                         
                         Tinst =(2.d0/(3.d0*real(npart)))*ke
