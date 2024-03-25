@@ -17,10 +17,10 @@
 <p align="center">
   <a href="#introduction">Introduction</a> •
   <a href="#description">Description</a> •
-  <a href="#getting-started">Getting started</a> •
+  <a href="#getting-started">Getting Started</a> •
   <a href="#help">Help</a> •
   <a href="#authors">Authors</a> •
-  <a href="#version-history">Version history</a>
+  <a href="#version-history">Version History</a>
 </p>
 
 ## Introduction
@@ -42,8 +42,8 @@ The different modules that can be found in this Repo are:
 
 ### Dependencies
 
-- Gnuplot
 - Fortran
+- Gnuplot
 
 ### Installing
 
