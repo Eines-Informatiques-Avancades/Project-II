@@ -215,7 +215,7 @@ contains
                                 !d6 = d_ij2*d_ij2*d_ij2 
                                 !d12 = d6*d6 
                                 !e_ij = 4.d0*((1.d0/d12) - (1.d0/d6)) - 4.d0*((1.d0/(cf2**6)) - (1.d0/(cf2**3)))
-                                e_ij = 4.d0*(1.d0/cutoff**12.d0 - 1.d0 /cutoff**6.d0)-4*(1.d0/d_ij2**6.d0-1.d0/d_ij2**3.d0)
+                                e_ij = - 4.d0*(1.d0/cutoff**12.d0 - 1.d0 /cutoff**6.d0)+ 4*(1.d0/d_ij2**6.d0-1.d0/d_ij2**3.d0)
 
                                 potentialEn = potentialEn + e_ij
                          end if
