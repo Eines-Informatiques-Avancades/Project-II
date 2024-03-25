@@ -49,8 +49,13 @@ The different modules that can be found in this Repo are:
 ### Installing
 
 1. Download the folder Serial code. During all the execution, make sure the files with extension `.f90`, `.gn` and the `Makefile` remain in the same directory.
-2. Modify the compilator, optimizator and flag variables in `Makefile` to your preference. **_Note:_** _The default compilator and optimizator are `gfortran` and `-O3`._
-3. Modify the parameters of your simulation in `parameters.nml`. **_Note:_** _The default parameters relate to a system of Kr gas at 300K._
+2. Modify the compilator, optimizator and flag variables in `Makefile` to your preference.
+
+   **_Note:_** _The default compilator and optimizator are `gfortran` and `-O3`._
+   
+3. Modify the parameters of your simulation in `parameters.nml`.
+
+   **_Note:_** _The default parameters relate to a system of Kr gas at 300K._
 
 ### Executing program
 
