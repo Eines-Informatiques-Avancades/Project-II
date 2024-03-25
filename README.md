@@ -32,12 +32,12 @@ This project consists on a simple molecular dynamics program to simulate a Van d
 
 The different modules that can be found in this Repo are:
 
-* Initialization: Method that will set all the initial particles within a periodical box and assign their initial state.
-* Boundary conditions: Method to assign particle coordinates within periodical box.
-* Forces: Method that calculates the van der Waals forces at each particle.
-* Integrators: Method to integrate Newton’s equations.
-* Statistics: Method to determine all averaged values of selected variables during simulation trajectory and showing its final values at the end of the trajectory.
-* Visualization of results: post-processing method that will deal with obtained data from a given trajectory and will allow to show evolution of the different variables involved in the molecular dynamics and other statistics at the highest level.
+* **Initialization:** Method that will set all the initial particles within a periodical box and assign their initial positions and velocities.
+* **Boundary conditions:** Method to assign particle coordinates within periodical box.
+* **Forces:** Method that calculates the van der Waals forces at each particle.
+* **Integrators:** Method to integrate Newton’s equations. 
+* **Statistics:** Method to determine all averaged values of selected variables during simulation trajectory and showing its final values at the end of the trajectory.
+* **Visualization of results:** post-processing method that will deal with obtained data from a given trajectory and will allow to show evolution of the energy, temperature and pressure of the system.
 
 ## Getting Started
 
@@ -48,9 +48,9 @@ The different modules that can be found in this Repo are:
 
 ### Installing
 
-1. Download all the files with extension `.f90`, `.gn` and the `Makefile` and place them in the same directory.
-2. Modify the compilator, optimizator and flag variables in `Makefile` to your preference.
-3. Modify the parameters of your simulation in `inputs.txt`.
+1. Download the folder Serial code. During all the execution, make sure the files with extension `.f90`, `.gn` and the `Makefile` remain in the same directory.
+2. Modify the compilator, optimizator and flag variables in `Makefile` to your preference. **_Note:_** _The default compilator and optimizator are `gfortran` and `-O3`._
+3. Modify the parameters of your simulation in `parameters.nml`. **_Note:_** _The default parameters relate to a system of Kr gas at 300K._
 
 ### Executing program
 
@@ -66,11 +66,12 @@ This also generates the final output plots. Alternatively, you can run the progr
 
 ## Help
 
-The `Makefile` script has a help menu that can be accessed running the following command:
+* The `Makefile` script has a help menu that can be accessed running the following command:
 ```
 make help
 ```
-
+* The folder `Results` contains an example of the results obtained for a system of Kr gas at 300K. Remember that you can adjust the parameters to your simulation modifying the file `parameters.nml`.
+  
 ## Authors
 
 * <a href="https://github.com/Qbadosfe"><img src="https://avatars.githubusercontent.com/u/162143734?v=4" title="Qbadosfe" width="25" height="25"></a> **Quim Badosa |** Forces
