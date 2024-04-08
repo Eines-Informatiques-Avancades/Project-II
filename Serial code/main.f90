@@ -8,19 +8,20 @@ program main_simulation
     implicit none
     real*8, allocatable, dimension(:,:) :: positions, velocities 
     integer :: N,n_steps,n_save_pos
-    real*8 :: L,temperature,dt,cutoff
+    real*8 :: L,temperature,dt,cutoff,epsilon
     character (len=500) :: simulation_name
     ! reads input file
     print*, 'START OF SIMULATION.'
     call read_parameters("parameters.nml", dt, N, n_steps, n_save_pos, L,&
-    simulation_name, temperature, cutoff)
+    simulation_name, temperature, cutoff, epsilon)
+    temperature = temperature/epsilon
     print*, 'Parameters of the simulation loaded.'
     ! allocates memory
     allocate(positions(N,3),velocities(N,3))
     print*, 'Needed arrays allocated.'
     ! initialize system
     call initial_positions(N, L, positions)
-    call initial_velocities(N,temperature,velocities)
+    call vel_bimodal(temperature,velocities)
     print*, 'System initialized.'
     ! simulation loop
     call main_loop(n_steps,n_save_pos, dt, L, cutoff, positions, velocities)
