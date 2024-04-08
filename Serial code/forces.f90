@@ -284,7 +284,7 @@ contains
                         Double precision, intent(out) :: Tinst
 
                         
-                        Tinst =(2.d0/(3.d0*real(npart)))*ke
+                        Tinst =(2.d0/(3.d0*real(npart)-3.d0))*ke
 
         end subroutine Tempinst
 
