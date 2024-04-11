@@ -9,6 +9,7 @@
   temperature = 300,             ! Temperature (absolute units, K)
   epsilon = 164.56               ! Kr 's epsilon (in K)
   cutoff = 2.,                  ! cutoff for interactions
+  nu = 0.1,                     ! Thermostat probability of acceptance
   ! I/O variables
   simulation_name = "simulation",    ! Simulation name
 
