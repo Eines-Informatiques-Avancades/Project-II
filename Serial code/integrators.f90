@@ -3,7 +3,7 @@ module integrators
     use Forces_and_Energies
 
     implicit none
-    public :: vv_integrator
+    public :: vv_integrator, boxmuller, therm_Andersen
 
 contains
     subroutine vv_integrator(positions, velocities, forces, cutoff, L, dt)
@@ -36,10 +36,10 @@ contains
         velocities = velocities + 0.5d0*dt*forces
     end subroutine vv_integrator
 
-    subroutine main_loop(N_steps, N_save_pos, dt, L, cutoff, positions, velocities)
+    subroutine main_loop(N_steps, N_save_pos, dt, L, sigma, nu, cutoff, positions, velocities)
     implicit none
     integer, intent(in) :: N_steps, N_save_pos
-    real*8, intent(in) :: dt, cutoff,L
+    real*8, intent(in) :: dt, cutoff,L, sigma, nu
     real*8, allocatable, dimension(:,:), intent(inout) :: positions, velocities 
     real*8, allocatable, dimension(:,:) :: forces
     real*8 :: KineticEn, PotentialEn, TotalEn, Tinst, press
@@ -60,6 +60,7 @@ contains
     do i=1,N_steps 
         time = i*dt
         call vv_integrator(positions,velocities,forces,cutoff,L,dt)
+        call therm_Andersen(velocities,nu,sigma,N)
 
         ! compute kinetic, potential and total energies
         call kineticE(velocities,KineticEn)
@@ -88,5 +89,38 @@ contains
     close(unit_tem)
     close(unit_pre)
     end subroutine main_loop
+
+    subroutine boxmuller(sigma, x1, x2, xout1, xout2)
+    implicit none
+    real*8 :: pi, sigma, x1, x2, xout1, xout2
+    pi = 4d0*datan(1d0)
+   
+    xout1=sigma*dsqrt(-2d0*(dlog(1d0-x1)))*dcos(2d0*pi*x2)
+    xout2=sigma*dsqrt(-2d0*(dlog(1d0-x1)))*dsin(2d0*pi*x2)
+   
+    end subroutine boxmuller
+
+! ----------------------------------------------------------------------------
+! ANDERSEN THERMOSTAT
+! ----------------------------------------------------------------------------
+    subroutine therm_Andersen(velocities,nu,sigma,N)
+    implicit none
+    integer :: i, j, seed, N
+    real*8, intent(in) :: nu, sigma
+    real*8, allocatable, dimension(:,:), intent(inout) :: velocities 
+    real*8 :: x1, x2, xout1, xout2
+   
+    do i=1,N
+        call random_number(x1)
+        if (x1 < nu) then
+            do j=1,3
+                call random_number(x1)
+                call random_number(x2)
+                call boxmuller(sigma, x1, x2, xout1, xout2)
+                velocities(i,j)=xout1
+            enddo
+        endif
+    enddo
+    end subroutine therm_Andersen
 end module integrators
 
