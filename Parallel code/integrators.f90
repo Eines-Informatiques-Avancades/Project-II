@@ -1,6 +1,7 @@
 module integrators
     use pbc_mod
     use Forces_and_Energies
+    use initial_positions_module
 
     implicit none
     public :: vv_integrator, boxmuller, therm_Andersen
@@ -59,9 +60,22 @@ contains
     ! write initial positions and velocities at time=0
     do i=1,N_steps 
         time = i*dt
+        ! Enter nproc as a parameter
+        call assign_subsystem(nproc,N,subsystems)
+        ! ----------------- Parallel approach -----------------------
+        call mpi_init(ierror)
+        call mpi_comm_rank(MPI_COMM_WORD,iproc,ierror)
+
+        imin=subsystems(iproc,1)
+        imax=subsystems(iproc,2)
+
+        ! Fer Verlet lists
+        
         call vv_integrator(positions,velocities,forces,cutoff,L,dt)
         call therm_Andersen(velocities,nu,sigma,N)
 
+        call mpi_finalize(ierror)
+        ! -----------------------------------------------------------
         ! compute kinetic, potential and total energies
         call kineticE(velocities,KineticEn)
         call potentialE(positions,cutoff,PotentialEn, boxsize=L)
