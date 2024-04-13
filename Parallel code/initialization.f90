@@ -121,6 +121,23 @@ contains
         close(3)
     end subroutine initial_velocities
 
+    subroutine assign_subsystem(nproc,N,subsystems)
+        integer, intent(in) :: nproc, N
+        integer, intent(out) :: subsystems(nproc,2)
+        integer :: i, Nsubsystem, Nrest
+
+        Nsubsystem=N/nproc
+        Nrest=mod(N,nproc)
+
+        do i=1,nproc
+            subsystems(i,1)=1+(i-1)*Nsubsystem !imin
+            subsystems(i,2)=subsystems(i,1)+(Nsubsystem-1) !imax
+        enddo
+
+        subsystems(nproc,2)=subsystems(nproc,2)+Nrest
+
+    end subroutine
+
     subroutine main
         !
         ! This subroutine is the main routine of the initializations.
