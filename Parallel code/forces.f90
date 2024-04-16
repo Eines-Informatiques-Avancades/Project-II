@@ -1,6 +1,8 @@
 module Forces_and_Energies
 use pbc_mod 
+include mpi90.h
 contains
+
         subroutine Pressure (positions,boxsize,cutoff,temp,press)
         !This function calculates the pressure done by a number of particles (given by the number of position elements) in a
         !box of a certain size at a certain temperature. The cutoff is used to set an interacting range of the particles.
@@ -36,8 +38,8 @@ contains
                 Double precision, dimension(3) :: f_ij
                 Double precision :: d_ij, volume, Virialterm, cf2
                 Integer ::  npart,i,j
-
-
+                Integer :: ierr, nprocs, myrank, particles_per_proc, start_index, end_index
+                Integer :: rank
                        
 
         ! Initial values:
@@ -49,39 +51,83 @@ contains
         cf2 = cutoff*cutoff
         !call PBC(positions, boxsize, npart)
         !Force between particles:
-        do i=1,npart-1
-                do j=i+1,npart
-                        !Distance between particles:
-                        r_ij(1,1)=positions(i,1)-positions(j,1)
-                        r_ij(2,1)=positions(i,2)-positions(j,2)
-                        r_ij(3,1)=positions(i,3)-positions(j,3)
+
+        call MPI_Init(ierr)
+        call MPI_Comm_size(MPI_COMM_WORLD, nprocs, ierr)
+        call MPI_Comm_rank(MPI_COMM_WORLD, myrank, ierr)
+
+        particles_per_proc = npart/nprocs
+
+        start_index = (myrank - 1) * particles_per_proc + 1
+        end_index = myrank * particles_per_proc - 1
+
+        if (myrank == nprocs) then
+                end_index = npart
+        end if
+
+        do i = start_index, end_index
+                call verlet
+                !nVerlet-> # particules que interaccionen amb i (eliminar npart)
+                counter=1
+                do j=counter, counter+nnlist(i)-1
+                        particulaInt=vlist(j)
+                        r_ij(1,1)=positions(i,1)-positions(particulaInt,1)
+                        r_ij(2,1)=positions(i,2)-positions(particulaInt,2)
+                        r_ij(3,1)=positions(i,3)-positions(particulaInt,3)
 
                         call minimum_image(r_ij(1,1), boxsize)
                         call minimum_image(r_ij(2,1), boxsize)
                         call minimum_image(r_ij(3,1), boxsize)
-
-
+        
+        
                         !Computes distance squared
                         d_ij=(r_ij(1,1)**2.d0)+(r_ij(2,1)**2.d0)+(r_ij(3,1)**2.d0)
                         !Now we compare this distance with the cutoff
-
+        
                         if (d_ij< cf2) then
                                  f_ij(1) = ((48.d0 / (d_ij**7)) -( 24.d0 / (d_ij**4))) * r_ij(1,1)
                                  f_ij(2) = ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(2,1)
                                  f_ij(3) = ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(3,1)
-
+        
                          !redefine virial Term value:
                                 Virialterm = Virialterm + dot_product(r_ij(:,1),f_ij)
                          end if
+                         
                    end do
+                   counter=counter+nnlist(i)
           end do
-          ! Paula: I added a ".d0" to the 10 because, if not added, is considered as integer and gives 0.
-          !press= (real(npart)*(1.38*10.d0**(-23))*temp)/volume + (1.d0/(3.d0*volume))*Virialterm
+
+                  ! Gather all Virialterm values onto root process (rank 0)
+            !MPI_Gather ajunta tots els diferents termes calculats. En el nostre cas ens interessa la suma per tant utilitzarem el reduce
+            ! Deixo això per aquí com a guia pel futur:
+
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            !root_process = 0
+            !allocate(all_Virialterm(nprocs))
+
+
+        
+            !call MPI_Gather(Virialterm, 1, MPI_DOUBLE_PRECISION, &
+            !                all_Virialterm, 1, MPI_DOUBLE_PRECISION, &
+            !               root_process, MPI_COMM_WORLD, ierr)            
+        
+            !deallocate(all_Virialterm)
+
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+          !global_Virialterm és el output, es redefineix després:
+          
+          call MPI_Reduce(Virialterm, global_Virialterm, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+
+          
+          call MPI_Finalize(ierr)
+
+          Virialterm=global_Virialterm
           ! Pressure units are J/m³
           ! we multiply ideal gas term *Kb=1.38*10**(-23)
           press= (dble(npart)*temp)/volume + (1.d0/(3.d0*volume))*Virialterm
           !Pressure in reduced units
-             
+                
       end subroutine Pressure
       
 
@@ -284,14 +330,6 @@ contains
                         Double precision, intent(out) :: Tinst
 
                         
-                        Tinst =(2.d0/(3.d0*real(npart)-3.d0))*ke
+                        Tinst =(2.d0/(3.d0*real(npart)-3))*ke
 
         end subroutine Tempinst
-
-
-
-        
-
-
-end module Forces_and_Energies
-
