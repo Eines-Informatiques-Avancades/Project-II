@@ -13,11 +13,11 @@ contains
         ! algorithm = performs a single velocity verlet step
 
         ! Args:
-        !    positions  (REAL64[3,N]) : positions of all N particles, in reduced units.
-        !    velocities (REAL64[3,N]) : velocities of all N partciles, in reduced units.
-        !    cutoff          (REAL64) : cutoff value of the interaction.
-        !    L               (REAL64) : length of the sides of the box.
-        !    dt              (REAL64) : value of the integration timestep.
+        !    positions  ([3,N]) : positions of all N particles, in reduced units.
+        !    velocities ([3,N]) : velocities of all N partciles, in reduced units.
+        !    cutoff          () : cutoff value of the interaction.
+        !    L               () : length of the sides of the box.
+        !    dt              () : value of the integration timestep.
         
         ! Returns:
         !    positions  (REAL64[3,N]) : positions of all N particles, in reduced units.
@@ -37,14 +37,15 @@ contains
         velocities = velocities + 0.5d0*dt*forces
     end subroutine vv_integrator
 
-    subroutine main_loop(N_steps, N_save_pos, dt, L, sigma, nu, cutoff, positions, velocities)
+    subroutine main_loop(N_steps, N_save_pos, dt, L, sigma, nu, nproc, cutoff, positions, velocities)
     implicit none
+    include 'mpif.h'
     integer, intent(in) :: N_steps, N_save_pos
     real*8, intent(in) :: dt, cutoff,L, sigma, nu
     real*8, allocatable, dimension(:,:), intent(inout) :: positions, velocities 
     real*8, allocatable, dimension(:,:) :: forces
     real*8 :: KineticEn, PotentialEn, TotalEn, Tinst, press
-    integer :: N, i, j,unit_dyn=10,unit_ene=11,unit_tem=12,unit_pre=13
+    integer :: N, i, j,unit_dyn=10,unit_ene=11,unit_tem=12,unit_pre=13,ierror,imin,imax,iproc,nproc,subsystems(nproc,2),Nsub
     real*8 :: time
     N = size(positions, dim=1)
     allocate(forces(N,3))
@@ -68,11 +69,12 @@ contains
 
         imin=subsystems(iproc,1)
         imax=subsystems(iproc,2)
-
+        Nsub = imax-imin+1
         ! Fer Verlet lists
-        
-        call vv_integrator(positions,velocities,forces,cutoff,L,dt)
-        call therm_Andersen(velocities,nu,sigma,N)
+        ! primer provem d'entrar l'array sencer fer l'slice quan cridem les subrutines
+        ! l'altra opció si això falla és crear una mini matriu amb un loop amb aquests indexs entre imin, imax
+        call vv_integrator(positions(:,imin:imax),velocities(:,imin:imax),forces(:,imin:imax),cutoff,L,dt)
+        call therm_Andersen(velocities(:,imin:imax),nu,sigma,Nsub)
 
         call mpi_finalize(ierror)
         ! -----------------------------------------------------------

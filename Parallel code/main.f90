@@ -7,13 +7,13 @@ program main_simulation
     use readers_mod
     implicit none
     real*8, allocatable, dimension(:,:) :: positions, velocities 
-    integer :: N,n_steps,n_save_pos
+    integer :: N,n_steps,n_save_pos,nproc
     real*8 :: L,temperature,dt,cutoff,epsilon,sigma,nu
     character (len=500) :: simulation_name
     ! reads input file
     print*, 'START OF SIMULATION.'
     call read_parameters("parameters.nml", dt, N, n_steps, n_save_pos, L,&
-    simulation_name, temperature, epsilon, cutoff, nu)
+    simulation_name, temperature, epsilon, cutoff, nu, nproc)
     temperature = temperature/epsilon
     sigma = dsqrt(temperature)
     print*, 'Parameters of the simulation loaded.'
@@ -25,7 +25,7 @@ program main_simulation
     call initial_velocities(N, temperature, velocities)
     print*, 'System initialized.'
     ! simulation loop
-    call main_loop(n_steps,n_save_pos, dt, L, sigma, nu, cutoff, positions, velocities)
+    call main_loop(n_steps,n_save_pos, dt, L, sigma, nu, nproc, cutoff, positions, velocities)
     ! deallocates memory
     deallocate(positions,velocities)
     write(*,'(A)') "END OF SIMULATION."
