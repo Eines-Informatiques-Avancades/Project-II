@@ -36,7 +36,7 @@ contains
                 
                 Double precision, dimension(3,1) :: r_ij
                 Double precision, dimension(3) :: f_ij
-                Double precision :: d_ij, volume, Virialterm, cf2
+                Double precision :: d_ij, volume, Virialterm,global_Virialterm, cf2
                 Integer ::  npart,i,j
                 Integer :: ierr, nprocs, myrank, particles_per_proc, start_index, end_index
                 Integer :: rank
@@ -167,35 +167,64 @@ contains
                 npart= int(size(positions,dim=1))
                 cf2 = cutoff*cutoff
                 vdw_force = 0.d0
-                do i=1,npart-1
-                do j=i+1,npart
+                
+                call MPI_Init(ierr)
+                call MPI_Comm_size(MPI_COMM_WORLD, nprocs, ierr)
+                call MPI_Comm_rank(MPI_COMM_WORLD, myrank, ierr)
+
+                particles_per_proc = npart/nprocs
+
+                start_index = (myrank - 1) * particles_per_proc + 1
+                end_index = myrank * particles_per_proc - 1
+
+                if (myrank == nprocs) then
+                        end_index = npart
+                end if
+
+                do i = start_index, end_index
+                        call verlet
+                        !nVerlet-> # particules que interaccionen amb i (eliminar npart)
+                        counter=1
+                        do j=counter, counter+nnlist(i)-1
+                                particulaInt=vlist(j)
+                                r_ij(1,1)=positions(i,1)-positions(particulaInt,1)
+                                r_ij(2,1)=positions(i,2)-positions(particulaInt,2)
+                                r_ij(3,1)=positions(i,3)-positions(particulaInt,3)
                         
-                        !Distance between particles:
-                        r_ij(1,1)=positions(i,1)-positions(j,1)
-                        r_ij(2,1)=positions(i,2)-positions(j,2)
-                        r_ij(3,1)=positions(i,3)-positions(j,3)
-
-                        call minimum_image(r_ij(1,1), boxsize)
-                        call minimum_image(r_ij(2,1), boxsize)
-                        call minimum_image(r_ij(3,1), boxsize)
-                        !Module of r_ij
-                        !Compute distance squared
-                        d_ij=(r_ij(1,1)*r_ij(1,1))+(r_ij(2,1)*r_ij(2,1))+(r_ij(3,1)*r_ij(3,1))
-                        !Now we compare this distance with the cutoff
-                        if (d_ij< cf2) then
-                                 !Force made by j to i
-                                 vdw_force(i,1) = vdw_force(i,1) + ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(1,1)
-                                 vdw_force(i,2) = vdw_force(i,2) + ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(2,1)
-                                 vdw_force(i,3) = vdw_force(i,3) + ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(3,1)
-
-                                 !Force made by i to j
-                                 vdw_force(j,1) = vdw_force(j,1) - ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(1,1)
-                                 vdw_force(j,2) = vdw_force(j,2) - ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(2,1)
-                                 vdw_force(j,3) = vdw_force(j,3) - ((48.d0 /( d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(3,1)
-
-                         end if
+                        
+                                call minimum_image(r_ij(1,1), boxsize)
+                                call minimum_image(r_ij(2,1), boxsize)
+                                call minimum_image(r_ij(3,1), boxsize)
+                                !Module of r_ij
+                                !Compute distance squared
+                                d_ij=(r_ij(1,1)*r_ij(1,1))+(r_ij(2,1)*r_ij(2,1))+(r_ij(3,1)*r_ij(3,1))
+                                !Now we compare this distance with the cutoff
+                                if (d_ij< cf2) then
+                                         !Force made by j to i
+                                         vdw_force(i,1) = vdw_force(i,1) + ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(1,1)
+                                         vdw_force(i,2) = vdw_force(i,2) + ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(2,1)
+                                         vdw_force(i,3) = vdw_force(i,3) + ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(3,1)
+        
+                                         !Force made by i to j
+                                         vdw_force(j,1) = vdw_force(j,1) - ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(1,1)
+                                         vdw_force(j,2) = vdw_force(j,2) - ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(2,1)
+                                         vdw_force(j,3) = vdw_force(j,3) - ((48.d0 /( d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(3,1)
+        
+                                 end if
+                        end do
+                        counter=counter+nnlist(i)
                 end do
-                end do
+               
+            
+
+
+        
+           call MPI_Gather(MPI_IN_PLACE, npart*3, MPI_DOUBLE_PRECISION, &
+                    Forces_P, npart*3, MPI_DOUBLE_PRECISION, &
+                    0, MPI_COMM_WORLD, ierr)        
+        
+           !Output Forces_P
+                
           end subroutine VDW_forces
 
              
