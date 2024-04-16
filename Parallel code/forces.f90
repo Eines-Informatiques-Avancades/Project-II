@@ -164,6 +164,8 @@ contains
                 Double precision, dimension(3,1) :: r_ij=0.d0
                 Double precision :: d_ij,cf2
                 Integer ::  npart,i,j
+                Integer :: ierr, nprocs, myrank, particles_per_proc, start_index, end_index
+                Integer :: rank
                 npart= int(size(positions,dim=1))
                 cf2 = cutoff*cutoff
                 vdw_force = 0.d0
@@ -220,10 +222,11 @@ contains
 
         
            call MPI_Gather(MPI_IN_PLACE, npart*3, MPI_DOUBLE_PRECISION, &
-                    Forces_P, npart*3, MPI_DOUBLE_PRECISION, &
+                    VDW_force, npart*3, MPI_DOUBLE_PRECISION, &
                     0, MPI_COMM_WORLD, ierr)        
         
-           !Output Forces_P
+           !Output Vdw_force
+           call MPI_Finalize(ierr)
                 
           end subroutine VDW_forces
 
@@ -264,6 +267,8 @@ contains
                 Double precision, dimension(3,1) :: r_ij
                 Double precision:: e_ij,d_ij2, cf2
                 Integer ::  npart,i,j
+                Integer :: ierr, nprocs, myrank, particles_per_proc, start_index, end_index
+                Integer :: rank
 
                 potentialEn=0.d0
                 npart= int(size(positions,dim=1))
