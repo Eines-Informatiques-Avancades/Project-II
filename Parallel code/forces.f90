@@ -66,7 +66,7 @@ contains
         end if
 
         do i = start_index, end_index
-                call verlet
+                call verletlist(start_index,end_index,N,positions,vcutoff,nnlist,vlist)
                 !nVerlet-> # particules que interaccionen amb i (eliminar npart)
                 counter=1
                 do j=counter, counter+nnlist(i)-1
