@@ -105,7 +105,8 @@ contains
                          
                    end do
                    counter=counter+nnlist(i)
-                   
+          deallocate(nnlist(dim))
+          deallocate(vlist(dim))
           end do
 
                   ! Gather all Virialterm values onto root process (rank 0)
@@ -130,8 +131,7 @@ contains
           
           call MPI_Reduce(Virialterm, global_Virialterm, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
 
-          deallocate(nnlist(dim))
-          deallocate(vlist(dim))
+          
           call MPI_Finalize(ierr)
 
           Virialterm=global_Virialterm
@@ -234,6 +234,8 @@ contains
                                  end if
                         end do
                         counter=counter+nnlist(i)
+                  deallocate(nnlist(dim))
+                  deallocate(vlist(dim))
                 end do
                
             
@@ -245,9 +247,6 @@ contains
                     0, MPI_COMM_WORLD, ierr)        
         
            !Output Vdw_force
-
-           deallocate(nnlist(dim))
-           deallocate(vlist(dim))
            call MPI_Finalize(ierr)
                 
           end subroutine VDW_forces
@@ -347,6 +346,8 @@ contains
                          end if
                 end do
                 counter=counter+nnlist(i)
+                deallocate(nnlist(dim))
+                deallocate(vlist(dim))
                 end do
                 
                 call MPI_Reduce(potentialEn, global_potentialEN, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
