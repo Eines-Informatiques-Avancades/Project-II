@@ -3,7 +3,7 @@ use pbc_mod
 include mpi90.h
 contains
 
-        subroutine Pressure (positions,boxsize,cutoff,temp,press)
+        subroutine Pressure (positions,boxsize,cutoff,vcutoff,temp,press)
         !This function calculates the pressure done by a number of particles (given by the number of position elements) in a
         !box of a certain size at a certain temperature. The cutoff is used to set an interacting range of the particles.
         ! Pressure has to terms: Ideal gas contribution Term (thermal motion) and the virial contribution term (interaction
@@ -19,12 +19,14 @@ contains
        !Positions : Positions of the particles DIM= (d,npart)  (d usually=3)
        !Boxsize: We will supose cubic system, double precision
        !Cutoff: A range of interaction real double precision 
+       !vCutoff: Verlet cutoff 
        !Temperature: in Kelvin rea, double precision
        ! Press: Result pressure, double precision
 
                 Double precision,allocatable, dimension(:,:), intent(in) :: positions
-                Double precision, intent(in) :: cutoff,temp,boxsize
+                Double precision, intent(in) :: cutoff,temp,boxsize, vcutoff
                 Double precision, intent(out) :: press
+                Integer,allocatable, dimension(:,:), intent(in) :: nnlist,vlist
                 
         !VARIABLES:
         !r_ij : relative position vector between pair of particles, double precision dim= (3,1)
@@ -40,6 +42,9 @@ contains
                 Integer ::  npart,i,j
                 Integer :: ierr, nprocs, myrank, particles_per_proc, start_index, end_index
                 Integer :: rank
+
+
+        
                        
 
         ! Initial values:
@@ -66,9 +71,14 @@ contains
         end if
 
         do i = start_index, end_index
-                call verletlist(start_index,end_index,N,positions,vcutoff,nnlist,vlist)
+                call verletlist(start_index,end_index,npart,positions,vcutoff,nnlist,vlist)
                 !nVerlet-> # particules que interaccionen amb i (eliminar npart)
                 counter=1
+                 ! Faig un allocate de nnlist i vlist! Ojo amb les dimensions, is this correct?
+                dim= end_index-start_index
+                allocate(nnlist(dim))
+                allocate(vlist(dim))
+                
                 do j=counter, counter+nnlist(i)-1
                         particulaInt=vlist(j)
                         r_ij(1,1)=positions(i,1)-positions(particulaInt,1)
@@ -95,6 +105,7 @@ contains
                          
                    end do
                    counter=counter+nnlist(i)
+                   
           end do
 
                   ! Gather all Virialterm values onto root process (rank 0)
@@ -119,7 +130,8 @@ contains
           
           call MPI_Reduce(Virialterm, global_Virialterm, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
 
-          
+          deallocate(nnlist(dim))
+          deallocate(vlist(dim))
           call MPI_Finalize(ierr)
 
           Virialterm=global_Virialterm
@@ -137,7 +149,7 @@ contains
       !!!!!---------------------------------------------------------------------------------------------------------------------
 
 
-      subroutine VDW_forces (positions,boxsize,cutoff, vdw_force)
+      subroutine VDW_forces (positions,boxsize,cutoff,vcutoff, vdw_force)
               ! Subroutine that calculates the interaction between particles using the Lennard Jones potential
               ! The interacting range is limited by a cutoff distance.
 
@@ -152,9 +164,10 @@ contains
 
                 Double precision,allocatable, dimension(:,:),intent(inout) :: positions
                 double precision, allocatable, dimension(:,:), intent(inout) :: vdw_force
+                Integer,allocatable, dimension(:,:), intent(in) :: nnlist,vlist
                 
                 
-                Double precision, intent(in) :: cutoff,boxsize
+                Double precision, intent(in) :: cutoff,vcutoff,boxsize
 
                  !VARIABLES:
                     !r_ij : relative position vector between pair of particles, double precision dim= (3,1)
@@ -185,8 +198,13 @@ contains
                 end if
 
                 do i = start_index, end_index
-                        call verlet
+                        call verletlist(start_index,end_index,npart,positions,vcutoff,nnlist,vlist)
                         !nVerlet-> # particules que interaccionen amb i (eliminar npart)
+
+                        ! Faig un allocate de nnlist i vlist! Ojo amb les dimensions, is this correct?
+                        dim= end_index-start_index
+                        allocate(nnlist(dim))
+                        allocate(vlist(dim))
                         counter=1
                         do j=counter, counter+nnlist(i)-1
                                 particulaInt=vlist(j)
@@ -227,6 +245,9 @@ contains
                     0, MPI_COMM_WORLD, ierr)        
         
            !Output Vdw_force
+
+           deallocate(nnlist(dim))
+           deallocate(vlist(dim))
            call MPI_Finalize(ierr)
                 
           end subroutine VDW_forces
@@ -242,7 +263,7 @@ contains
 
           !!!!!!!!!!!-------------------------------------------------------------------------------
 
-          subroutine potentialE (positions,cutoff,PotentialEn, boxsize)
+          subroutine potentialE (positions,cutoff,vcutoff,PotentialEn, boxsize)
 
                   !Subroutine to calculate the potential energy between particles using Lennard-Jones potential
 
@@ -256,8 +277,9 @@ contains
                 !PotentialE: Total potential energy
 
                 Double precision,allocatable, dimension(:,:), intent(in) :: positions
-                Double precision, intent(in) :: cutoff, boxsize
+                Double precision, intent(in) :: cutoff,vcutoff, boxsize
                 Double precision, intent(out) :: PotentialEn, global_potentialEN
+                Integer,allocatable, dimension(:,:), intent(in) :: nnlist,vlist
 
                  !VARIABLES:
                     !r_ij : relative position vector between pair of particles, double precision dim= (3,1)
@@ -290,9 +312,14 @@ contains
                 end if
                 
                 do i = start_index, end_index
-                        call verlet
+                        call verletlist(start_index,end_index,npart,positions,vcutoff,nnlist,vlist)
                         !nVerlet-> # particules que interaccionen amb i (eliminar npart)
                         counter=1
+                        
+                         ! Faig un allocate de nnlist i vlist! Ojo amb les dimensions, is this correct?
+                        dim= end_index-start_index
+                        allocate(nnlist(dim))
+                        allocate(vlist(dim))
                         do j=counter, counter+nnlist(i)-1
                         
                         !Distance between particles:
@@ -323,6 +350,9 @@ contains
                 end do
 
                 call MPI_Reduce(potentialEn, global_potentialEN, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+
+                deallocate(nnlist(dim))
+                deallocate(vlist(dim))
                 call MPI_Finalize(ierr)
                 potentialEn= global_potentialEN
         end subroutine potentialE
