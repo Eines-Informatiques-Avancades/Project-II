@@ -26,7 +26,7 @@ contains
                 Double precision,allocatable, dimension(:,:), intent(in) :: positions
                 Double precision, intent(in) :: cutoff,temp,boxsize, vcutoff
                 Double precision, intent(out) :: press
-                Integer,allocatable, dimension(:,:), intent(in) :: nnlist,vlist
+                Integer,allocatable, dimension(:), intent(in) :: nnlist,vlist
                 
         !VARIABLES:
         !r_ij : relative position vector between pair of particles, double precision dim= (3,1)
@@ -41,7 +41,7 @@ contains
                 Double precision :: d_ij, volume, Virialterm,global_Virialterm, cf2
                 Integer ::  npart,i,j
                 Integer :: ierr, nprocs, myrank, particles_per_proc, start_index, end_index
-                Integer :: rank
+                Integer :: rank,dim
 
 
         
@@ -164,7 +164,7 @@ contains
 
                 Double precision,allocatable, dimension(:,:),intent(inout) :: positions
                 double precision, allocatable, dimension(:,:), intent(inout) :: vdw_force
-                Integer,allocatable, dimension(:,:), intent(in) :: nnlist,vlist
+                Integer,allocatable, dimension(:), intent(in) :: nnlist,vlist
                 
                 
                 Double precision, intent(in) :: cutoff,vcutoff,boxsize
@@ -179,7 +179,7 @@ contains
                 Double precision :: d_ij,cf2
                 Integer ::  npart,i,j
                 Integer :: ierr, nprocs, myrank, particles_per_proc, start_index, end_index
-                Integer :: rank
+                Integer :: rank,dim
                 npart= int(size(positions,dim=1))
                 cf2 = cutoff*cutoff
                 vdw_force = 0.d0
@@ -279,7 +279,7 @@ contains
                 Double precision,allocatable, dimension(:,:), intent(in) :: positions
                 Double precision, intent(in) :: cutoff,vcutoff, boxsize
                 Double precision, intent(out) :: PotentialEn, global_potentialEN
-                Integer,allocatable, dimension(:,:), intent(in) :: nnlist,vlist
+                Integer,allocatable, dimension(:), intent(in) :: nnlist,vlist
 
                  !VARIABLES:
                     !r_ij : relative position vector between pair of particles, double precision dim= (3,1)
@@ -291,7 +291,7 @@ contains
                 Double precision:: e_ij,d_ij2, cf2
                 Integer ::  npart,i,j
                 Integer :: ierr, nprocs, myrank, particles_per_proc, start_index, end_index
-                Integer :: rank
+                Integer :: rank,dim
 
                 potentialEn=0.d0
                 npart= int(size(positions,dim=1))
@@ -348,7 +348,7 @@ contains
                 end do
                 counter=counter+nnlist(i)
                 end do
-
+                
                 call MPI_Reduce(potentialEn, global_potentialEN, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
 
                 deallocate(nnlist(dim))
