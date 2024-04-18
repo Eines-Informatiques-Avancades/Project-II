@@ -137,7 +137,7 @@ contains
       !!!!!---------------------------------------------------------------------------------------------------------------------
 
 
-      subroutine VDW_forces (positions,boxsize,cutoff, VDW_force)
+      subroutine VDW_forces (positions,boxsize,cutoff, vdw_force)
               ! Subroutine that calculates the interaction between particles using the Lennard Jones potential
               ! The interacting range is limited by a cutoff distance.
 
@@ -152,6 +152,7 @@ contains
 
                 Double precision,allocatable, dimension(:,:),intent(inout) :: positions
                 double precision, allocatable, dimension(:,:), intent(inout) :: vdw_force
+                
                 
                 Double precision, intent(in) :: cutoff,boxsize
 
@@ -256,7 +257,7 @@ contains
 
                 Double precision,allocatable, dimension(:,:), intent(in) :: positions
                 Double precision, intent(in) :: cutoff, boxsize
-                Double precision, intent(out) :: PotentialEn
+                Double precision, intent(out) :: PotentialEn, global_potentialEN
 
                  !VARIABLES:
                     !r_ij : relative position vector between pair of particles, double precision dim= (3,1)
@@ -274,8 +275,26 @@ contains
                 npart= int(size(positions,dim=1))
                 cf2 = cutoff*cutoff
                 !call PBC(positions, boxsize, npart)
-                do i=1,npart-1
-                do j=i+1,npart
+
+                call MPI_Init(ierr)
+                call MPI_Comm_size(MPI_COMM_WORLD, nprocs, ierr)
+                call MPI_Comm_rank(MPI_COMM_WORLD, myrank, ierr)
+
+                particles_per_proc = npart/nprocs
+
+                start_index = (myrank - 1) * particles_per_proc + 1
+                end_index = myrank * particles_per_proc - 1
+
+                if (myrank == nprocs) then
+                        end_index = npart
+                end if
+                
+                do i = start_index, end_index
+                        call verlet
+                        !nVerlet-> # particules que interaccionen amb i (eliminar npart)
+                        counter=1
+                        do j=counter, counter+nnlist(i)-1
+                        
                         !Distance between particles:
                         r_ij(1,1)=positions(i,1)-positions(j,1)
                         r_ij(2,1)=positions(i,2)-positions(j,2)
@@ -300,7 +319,12 @@ contains
                                 potentialEn = potentialEn + e_ij
                          end if
                 end do
+                counter=counter+nnlist(i)
                 end do
+
+                call MPI_Reduce(potentialEn, global_potentialEN, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+                call MPI_Finalize(ierr)
+                potentialEn= global_potentialEN
         end subroutine potentialE
         
 
