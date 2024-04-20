@@ -1,34 +1,26 @@
 # Compilator, el optimizator and flags variables
-FC = gfortran
-OPT = -O3
-FLAGS = -Wall -Wextra
+FC = $(HOME)/opt/usr/local/bin/mpif90
+MC = $(HOME)/opt/usr/local/bin/mpirun -np 4
 
 # List of source files .f90
 SRCS = initialization.f90 pbc.f90 forces.f90 integrators.f90 readers.f90 main.f90
 
 # List of object files .o
-OBJS = $(SRCS:.f90=.o)
+OBJS = $(SRCS:.f90=)
 
 # Executable name
 EXE = a.out
 
-# Files compilation
-all: $(EXE)
-
-# Executable file compilation from the object files
-$(EXE): $(OBJS)
-	$(FC) $(OPT) $(FLAGS) -o $@ $^
-
-# Source file compilation from .f90 to .o
-%.o: %.f90
-	$(FC) $(OPT) $(FLAGS) -c $<
+run:
+	$(FC) -g $(SRCS)
+#	$(MC)
 
 # Run 
-run: $(EXE)
-	mkdir -p results
-	./$(EXE)
-	gnuplot visualization.gn
-	mv *.dat *.png ./results
+#run: $(EXE)
+#	mkdir -p results
+#	./$(EXE)
+#	gnuplot visualization.gn
+#	mv *.dat *.png ./results
 
 # Delete files .o, .mod and .out
 clean:
