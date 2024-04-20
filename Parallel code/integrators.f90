@@ -24,49 +24,49 @@ contains
         !    velocities (REAL64[3,N]) : velocities of all N partciles, in reduced units.
 
         implicit none
-        real*8, allocatable, dimension(:,:), intent(inout) :: positions, velocities, forces
+        real*8, dimension(:,:), intent(inout) :: positions, velocities, forces
         real*8, intent(in)                                 :: cutoff, L, dt
         integer :: N
         N = size(positions,dim=1)
-        call VDW_forces(positions, L, cutoff, forces)
+        !call VDW_forces(positions, L, cutoff, forces)
+        forces=0.d0
         positions = positions + (dt*velocities) + (0.5d0*dt*dt*forces)
         call PBC(positions, L,N)
         velocities = velocities + (0.5d0*dt*forces)
 
-        call VDW_forces(positions, L, cutoff, forces)
+        !call VDW_forces(positions, L, cutoff, forces)
         velocities = velocities + 0.5d0*dt*forces
     end subroutine vv_integrator
 
-    subroutine main_loop(N_steps, N_save_pos, dt, L, sigma, nu, nproc, cutoff, positions, velocities)
+    subroutine main_loop(iproc,N_steps, N_save_pos, dt, L, sigma, nu, nproc, cutoff, positions, velocities)
     implicit none
-    include 'mpif.h'
-    integer, intent(in) :: N_steps, N_save_pos
+    integer, intent(in) :: N_steps, N_save_pos,iproc
     real*8, intent(in) :: dt, cutoff,L, sigma, nu
     real*8, allocatable, dimension(:,:), intent(inout) :: positions, velocities 
     real*8, allocatable, dimension(:,:) :: forces
     real*8 :: KineticEn, PotentialEn, TotalEn, Tinst, press
-    integer :: N, i, j,unit_dyn=10,unit_ene=11,unit_tem=12,unit_pre=13,ierror,imin,imax,iproc,nproc,subsystems(nproc,2),Nsub
+    integer :: N, i, j,unit_dyn=10,unit_ene=11,unit_tem=12,unit_pre=13,imin,imax,nproc,subsystems(nproc,2),Nsub
     real*8 :: time
     N = size(positions, dim=1)
-    allocate(forces(N,3))
-    ! open files
-    open(unit_dyn,file = 'dynamics.dat',status="REPLACE")
-    open(unit_ene,file = 'energies.dat',status="REPLACE")
-    open(unit_tem,file = 'tempinst.dat',status="REPLACE")
-    open(unit_pre,file = 'pressure.dat',status="REPLACE")
-    do i=1,N
-        write(unit_dyn,'(3(f8.3,x))') positions(i,:)
-    enddo
-    write(unit_dyn,'(A)') " "
+    ! allocation, open files
     ! write initial positions and velocities at time=0
+    if (iproc==0) then
+        allocate(forces(N,3))
+        open(unit_dyn,file = 'dynamics.dat',status="REPLACE")
+        open(unit_ene,file = 'energies.dat',status="REPLACE")
+        open(unit_tem,file = 'tempinst.dat',status="REPLACE")
+        open(unit_pre,file = 'pressure.dat',status="REPLACE")
+        do i=1,N
+            write(unit_dyn,'(3(f8.3,x))') positions(i,:)
+        enddo
+        write(unit_dyn,'(A)') " "
+    endif
+
     do i=1,N_steps 
         time = i*dt
         ! Enter nproc as a parameter
         call assign_subsystem(nproc,N,subsystems)
         ! ----------------- Parallel approach -----------------------
-        call mpi_init(ierror)
-        call mpi_comm_rank(MPI_COMM_WORD,iproc,ierror)
-
         imin=subsystems(iproc,1)
         imax=subsystems(iproc,2)
         Nsub = imax-imin+1
@@ -75,8 +75,6 @@ contains
         ! l'altra opció si això falla és crear una mini matriu amb un loop amb aquests indexs entre imin, imax
         call vv_integrator(positions(:,imin:imax),velocities(:,imin:imax),forces(:,imin:imax),cutoff,L,dt)
         call therm_Andersen(velocities(:,imin:imax),nu,sigma,Nsub)
-
-        call mpi_finalize(ierror)
         ! -----------------------------------------------------------
         ! compute kinetic, potential and total energies
         call kineticE(velocities,KineticEn)
@@ -88,22 +86,25 @@ contains
         ! compute pressure
         call Pressure (positions,L,cutoff,Tinst,press)
         ! write variables to output - positions, energies
-
-        if (MOD(i,N_save_pos).EQ.0) then
-            do j=1,N 
-                write(unit_dyn,'(3(e12.3,x))') positions(j,:)
-            enddo 
-            write(unit_dyn,'(A)') " "
-            write(unit_ene,'(4(e12.3,x))') time, KineticEn, PotentialEn, TotalEn
-            write(unit_tem,'(2(e12.3,x))') time, Tinst
-            write(unit_pre,'(2(e12.3,x))') time, press
+        if (iproc==0) then
+            if (MOD(i,N_save_pos).EQ.0) then
+                do j=1,N 
+                    write(unit_dyn,'(3(e12.3,x))') positions(j,:)
+                enddo 
+                write(unit_dyn,*) " "
+                write(unit_ene,'(4(e12.3,x))') time, KineticEn, PotentialEn, TotalEn
+                write(unit_tem,'(2(e12.3,x))') time, Tinst
+                write(unit_pre,'(2(e12.3,x))') time, press
+            endif
         endif
     enddo
-    deallocate(forces)
-    close(unit_dyn)
-    close(unit_ene)
-    close(unit_tem)
-    close(unit_pre)
+    if (iproc==0) then
+        deallocate(forces)
+        close(unit_dyn)
+        close(unit_ene)
+        close(unit_tem)
+        close(unit_pre)
+    endif
     end subroutine main_loop
 
     subroutine boxmuller(sigma, x1, x2, xout1, xout2)
@@ -120,7 +121,7 @@ contains
     implicit none
     integer :: i, j, seed, N
     real*8, intent(in) :: nu, sigma
-    real*8, allocatable, dimension(:,:), intent(inout) :: velocities 
+    real*8, dimension(:,:), intent(inout) :: velocities 
     real*8 :: x1, x2, xout1, xout2
    
     do i=1,N
