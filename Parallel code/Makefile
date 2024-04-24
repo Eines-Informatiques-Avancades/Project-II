@@ -1,5 +1,7 @@
 # Compilator, el optimizator and flags variables
 FC = mpif90
+MC = mpirun
+NP = 4
 OPT = -O2
 #FLAGS
 
@@ -26,7 +28,7 @@ $(EXE): $(OBJS)
 # Run 
 run: $(EXE)
 	mkdir -p results
-	mpirun -np 4 ./$(EXE)
+	$(MC) -np $(NP) ./$(EXE)
 	gnuplot visualization.gn
 	mv *.dat *.png ./results
 

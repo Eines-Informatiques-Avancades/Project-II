@@ -1,9 +1,10 @@
 module readers_mod
 implicit none
 contains
-
+! call read_parameters("parameters.nml", dt, N, n_steps, n_save_pos, L,&
+! simulation_name, temperature, epsilon, cutoff, nu, nproc)
 subroutine read_parameters(param_file, dt, n_particles, n_steps, n_save_pos, L,&
-    simulation_name, temperature,epsilon,cutoff,nu)
+    simulation_name, temperature,epsilon,cutoff,nu,nproc)
     implicit none
     ! Subroutine to read the simulation parameters from a an nml list
     !
@@ -11,7 +12,7 @@ subroutine read_parameters(param_file, dt, n_particles, n_steps, n_save_pos, L,&
     !   param_file : The path of the parameter file 
     character(len=*), intent(in)      :: param_file
     real*8, intent(inout)               :: dt, temperature, L, cutoff,epsilon,nu
-    integer, intent(inout)              :: n_particles, n_steps, n_save_pos
+    integer, intent(inout)              :: n_particles, n_steps, n_save_pos,nproc
     character(len=500), intent(inout)   :: simulation_name
 
     integer                              :: unit_nr, iost
@@ -20,7 +21,7 @@ subroutine read_parameters(param_file, dt, n_particles, n_steps, n_save_pos, L,&
     
 
     namelist /PARAMS/ dt, n_particles, n_save_pos, L, temperature,&
-    n_steps, simulation_name, epsilon,cutoff,nu
+    n_steps, simulation_name, epsilon,cutoff,nu,nproc
 
     ! Reading namelist
     open(newunit=unit_nr, file=trim(param_file), access='sequential', &
