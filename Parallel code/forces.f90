@@ -1,10 +1,12 @@
 module Forces_and_Energies
 use pbc_mod 
 use verlet
-include 'mpif.h'
-contains
 
-        subroutine Pressure (positions,boxsize,cutoff,temp,press)
+implicit none
+    public :: Pressure, VDW_forces, potentialE, kineticE
+
+contains
+        subroutine Pressure (start_index,end_index,nprocs,iproc,positions,boxsize,cutoff,temp,press)
         !This function calculates the pressure done by a number of particles (given by the number of position elements) in a
         !box of a certain size at a certain temperature. The cutoff is used to set an interacting range of the particles.
         ! Pressure has to terms: Ideal gas contribution Term (thermal motion) and the virial contribution term (interaction
@@ -23,7 +25,7 @@ contains
        !Temperature: in Kelvin rea, double precision
        ! Press: Result pressure, double precision
 
-                Double precision,allocatable, dimension(:,:), intent(in) :: positions
+                Double precision, dimension(:,:), intent(in) :: positions
                 Double precision, intent(in) :: cutoff,temp,boxsize
                 Double precision, intent(out) :: press
                 
@@ -39,10 +41,11 @@ contains
                 Double precision, dimension(3) :: f_ij
                 Double precision :: d_ij, volume, Virialterm, cf2
                 Integer ::  npart,i,j
-                Integer :: ierr, nprocs, myrank, particles_per_proc, start_index, end_index
+                Integer :: nprocs, iproc, particles_per_proc, start_index, end_index
                 Integer :: rank, counter, particulaInt
                 Double precision :: global_Virialterm
-		Integer, dimension(:), allocatable :: nnlist, vlist
+		Integer :: nnlist(start_index:end_index)
+                integer, allocatable :: vlist(:)
                 Double precision :: remainder
 
 
@@ -56,37 +59,29 @@ contains
         !Force between particles:
 
         print *, 'Number of particles: ', npart
-        print*, 'Index of the particles: ', positions
-
-        call MPI_Init(ierr)
-        call MPI_Comm_size(MPI_COMM_WORLD, nprocs, ierr)
-        call MPI_Comm_rank(MPI_COMM_WORLD, myrank, ierr)
+        !print*, 'Index of the particles: ', positions
 
         particles_per_proc = npart/nprocs
         remainder = mod(npart, nprocs)
 
-        print *, myrank, 'This is my rank'
+        print *, iproc, 'This is my rank'
 
-        if (myrank < remainder) then
-                start_index = myrank * (particles_per_proc + 1)
+        if (iproc < remainder) then
+                start_index = iproc * (particles_per_proc + 1)
                 end_index = start_index + particles_per_proc
         else
-                start_index = myrank * particles_per_proc + remainder
+                start_index = iproc * particles_per_proc + remainder
                 end_index = start_index + particles_per_proc - 1
         end if
 
-        print *, 'Rank: ', myrank, 'Start index: ', start_index, 'End index: ', end_index
+        print *, 'Rank: ', iproc, 'Start index: ', start_index, 'End index: ', end_index
 
-        allocate(nnlist(npart))
-        allocate(vlist(npart))
+        !allocate(nnlist(npart))
+        !allocate(vlist(npart))
 
         do i = start_index, end_index
                 call verletlist(start_index, end_index, npart, positions, cutoff, nnlist, vlist)
-!nVerlet-> # particules que interaccionen amb i (eliminar npart)
-                ! Faig un allocate de nnlist i vlist! Ojo amb les dimensions, is this correct?
-                !dim= end_index-start_index
-                !allocate(nnlist(dim))
-                !allocate(vlist(dim))
+                print*, '4'
                 counter=1
                 do j=counter, counter+nnlist(i)-1
                         particulaInt=vlist(j)
@@ -135,12 +130,9 @@ contains
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
           !global_Virialterm és el output, es redefineix després:
-          deallocate(nnlist, vlist) !?
+          !deallocate(nnlist, vlist) !?
 
-          call MPI_Reduce(Virialterm, global_Virialterm, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-
-          
-          call MPI_Finalize(ierr)
+          !call MPI_Reduce(Virialterm, global_Virialterm, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
 
           Virialterm=global_Virialterm
           ! Pressure units are J/m³
@@ -153,11 +145,9 @@ contains
       !!!!!---------------------------------------------------------------------------------------------------------------------
 
 
-      subroutine VDW_forces (positions,boxsize,cutoff, VDW_force)
+      subroutine VDW_forces (positions, vlist, nnlist, imin,imax,boxsize, cutoff, max_dist, VDW_force)
               ! Subroutine that calculates the interaction between particles using the Lennard Jones potential
               ! The interacting range is limited by a cutoff distance.
-
-                            
               implicit none
 
                 !ARGUMENTS:
@@ -165,12 +155,12 @@ contains
                    !Boxsize: We will supose cubic system, double precision
                    !Cutoff: A range of interaction real double precision 
                    !VDW_force: Total interaction force                       
-
-                Double precision,allocatable, dimension(:,:),intent(inout) :: positions
-                double precision, allocatable, dimension(:,:), intent(inout) :: vdw_force
-                
+                integer, intent(in) :: vlist(:),nnlist(:), imin,imax
+                Double precision, dimension(:,:), intent(inout) :: positions
+                double precision, dimension(:,:), intent(inout) :: vdw_force
                 Double precision, intent(in) :: cutoff,boxsize
-
+                Double precision, intent(inout) :: max_dist
+                
                  !VARIABLES:
                     !r_ij : relative position vector between pair of particles, double precision dim= (3,1)
                     !d_ij : distance module between the particles, double precision 
@@ -179,13 +169,18 @@ contains
 
                 Double precision, dimension(3,1) :: r_ij=0.d0
                 Double precision :: d_ij,cf2
-                Integer ::  npart,i,j
+                Integer ::  npart,i,j,jj,jmin,jmax,nneighbors=0
                 npart= int(size(positions,dim=1))
                 cf2 = cutoff*cutoff
+
                 vdw_force = 0.d0
-                do i=1,npart-1
-                do j=i+1,npart
-                        
+                jmax = 0
+                do i=imin,imax
+                        jmin = jmax+1
+                        nneighbors = nnlist(i-imin+1) ! first particle is i = imin and first index in nnlist to check is 1
+                        jmax = jmin+nneighbors-1
+                do jj=jmin,jmax
+                        j = vlist(jj)
                         !Distance between particles:
                         r_ij(1,1)=positions(i,1)-positions(j,1)
                         r_ij(2,1)=positions(i,2)-positions(j,2)
@@ -196,20 +191,29 @@ contains
                         call minimum_image(r_ij(3,1), boxsize)
                         !Module of r_ij
                         !Compute distance squared
+                        
                         d_ij=(r_ij(1,1)*r_ij(1,1))+(r_ij(2,1)*r_ij(2,1))+(r_ij(3,1)*r_ij(3,1))
-                        !Now we compare this distance with the cutoff
+
+
+                        !Now we compare this distance with the forces cutoff
                         if (d_ij< cf2) then
-                                 !Force made by j to i
-                                 vdw_force(i,1) = vdw_force(i,1) + ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(1,1)
-                                 vdw_force(i,2) = vdw_force(i,2) + ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(2,1)
-                                 vdw_force(i,3) = vdw_force(i,3) + ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(3,1)
+                                !Force made by j to i
+                                vdw_force(i,1) = vdw_force(i,1) + ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(1,1)
+                                vdw_force(i,2) = vdw_force(i,2) + ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(2,1)
+                                vdw_force(i,3) = vdw_force(i,3) + ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(3,1)
 
-                                 !Force made by i to j
-                                 vdw_force(j,1) = vdw_force(j,1) - ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(1,1)
-                                 vdw_force(j,2) = vdw_force(j,2) - ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(2,1)
-                                 vdw_force(j,3) = vdw_force(j,3) - ((48.d0 /( d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(3,1)
+                                !Force made by i to j
+                                vdw_force(j,1) = vdw_force(j,1) - ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(1,1)
+                                vdw_force(j,2) = vdw_force(j,2) - ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(2,1)
+                                vdw_force(j,3) = vdw_force(j,3) - ((48.d0 /( d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(3,1)
 
-                         end if
+                        ! we keep the largest distance between particles
+                        else 
+                                
+                                if (d_ij > max_dist) then 
+                                        max_dist = d_ij
+                                endif
+                        endif
                 end do
                 end do
           end subroutine VDW_forces
