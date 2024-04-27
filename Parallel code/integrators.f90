@@ -8,7 +8,7 @@ module integrators
 
     public :: vv_integrator, boxmuller, therm_Andersen
 contains
-    subroutine vv_integrator(imin,imax,positions, velocities, forces, cutoff, L, dt)
+    subroutine vv_integrator(imin,imax,positions, velocities, forces, vlist,nnlist, cutoff, L, dt, max_dist)
         !
         !  Subroutine to update the positions of all particles using the Velocity Verlet
         ! algorithm = performs a single velocity verlet step
@@ -25,16 +25,18 @@ contains
         !    velocities (REAL64[3,N]) : velocities of all N partciles, in reduced units.
 
         implicit none
-        integer, intent(in) :: imin, imax
+        real*8, intent(inout) :: max_dist
+        integer, intent(in) :: imin, imax, vlist(:), nnlist(:)
         real*8, dimension(:,:), intent(inout) :: positions, velocities, forces
         real*8, intent(in)                                 :: cutoff, L, dt
         integer :: N
+
         N = size(positions,dim=1)
         ! forces will require the verlet lists
-        !call VDW_forces(positions, L, cutoff, forces)
-        forces(imin:imax,:)=0.d0
+        call VDW_forces(positions, vlist, nnlist, imin, imax, L, cutoff, max_dist, forces)
+        !forces(imin:imax,:)=0.d0
         positions(imin:imax,:) = positions(imin:imax,:) + (dt*velocities(imin:imax,:)) + (0.5d0*dt*dt*forces(imin:imax,:))
-        !call PBC(positions, L,N)
+        call PBC(imin, imax, positions, L,N)
         !velocities = velocities + (0.5d0*dt*forces)
 
         !call VDW_forces(positions, L, cutoff, forces)
@@ -46,18 +48,19 @@ contains
     integer, intent(in) :: comm, N_steps, N_save_pos,iproc,nproc
     real*8, intent(in) :: dt, cutoff, vcutoff, L, sigma, nu
     real*8, allocatable, dimension(:,:), intent(inout) :: positions, velocities 
-    real*8, allocatable, dimension(:,:) :: forces
-    real*8 :: KineticEn, PotentialEn, TotalEn, Tinst, press
+    real*8, allocatable :: forces(:,:),max_dist(:)
+
+    real*8 :: KineticEn, PotentialEn, TotalEn, Tinst, press, vcf2
     integer :: N, i, j,unit_dyn=10,unit_ene=11,unit_tem=12,unit_pre=13,imin,imax,subsystems(nproc,2),Nsub,ierror
     integer, allocatable, dimension(:) :: gather_counts, gather_displs, nnlist, vlist
     real*8 :: time
+    logical :: update_vlist = .FALSE.
+    vcf2 = vcutoff*vcutoff
     N = size(positions, dim=1)
     ! allocation, open files
     ! write initial positions and velocities at time=0
     allocate(forces(N,3))
-    ! allocate parallel related structures needed for MPI_ALLGATHERV
-    !  and also for the calculation of forces
-    allocate(gather_counts(nproc),gather_displs(nproc), nnlist(N), vlist(N*N))
+
     if (iproc==0) then
         open(unit_dyn,file = 'dynamics.dat',status="REPLACE")
         open(unit_ene,file = 'energies.dat',status="REPLACE")
@@ -75,9 +78,15 @@ contains
     imin=subsystems(iproc+1,1) 
     imax=subsystems(iproc+1,2)
     Nsub = imax-imin+1
-
+    ! allocate parallel related structures needed for MPI_ALLGATHERV
+    ! and also for the calculation of forces
+    allocate(gather_counts(nproc),gather_displs(nproc), nnlist(Nsub), vlist(Nsub*Nsub),max_dist(nproc))
+    max_dist = 0.d0
     call MPI_BARRIER(comm,ierror)
+    ! Fer Verlet lists
+    call verletlist(imin,imax,N,positions,vcutoff,nnlist,vlist)
     do i=1,N_steps
+
         time = i*dt
         call MPI_BARRIER(comm,ierror)
 
@@ -89,11 +98,7 @@ contains
         do j = 2, nproc
             gather_displs(j) = gather_displs(j - 1) + gather_counts(j - 1)
         end do
-        ! Fer Verlet lists
-        call verletlist(imin,imax,N,positions,vcutoff,nnlist,vlist)
-        ! primer provem d'entrar l'array sencer fer l'slice quan cridem les subrutines
-        ! l'altra opció si això falla és crear una mini matriu amb un loop amb aquests indexs entre imin, imax
-        call vv_integrator(imin,imax,positions,velocities,forces,cutoff,L,dt)
+        call vv_integrator(imin,imax,positions,velocities,forces,vlist,nnlist,cutoff,L,dt,max_dist(iproc))
         call MPI_BARRIER(comm,ierror)
 
         ! Perform MPI_ALLGATHERV to gather positions from all processes
@@ -119,6 +124,7 @@ contains
         ! call Pressure(imin,imax,nproc,iproc,positions,L,cutoff,Tinst,press)
         ! write variables to output - positions, energies
         if (iproc==0) then
+            print*, ''
             if (MOD(i,N_save_pos).EQ.0) then
                 do j=1,N 
                     write(unit_dyn,'(3(e12.3,x))') positions(j,:)
@@ -128,6 +134,17 @@ contains
                 write(unit_tem,'(2(e12.3,x))') time, Tinst
                 write(unit_pre,'(2(e12.3,x))') time, press
             endif
+        endif
+        ! check if Verlet lists need to be updated
+        if (max_dist(iproc) > vcf2) then 
+            update_vlist = .TRUE.
+            write(*,'(i3,x,A)') iproc,'speaking: Verlet lists need to be updated.'
+            write(*,*) max_dist(iproc)
+        endif
+        call MPI_BARRIER(comm, ierror)
+        if (update_vlist) then 
+            max_dist(iproc) = 0.d0
+            call verletlist(imin,imax,N,positions,vcutoff,nnlist,vlist)
         endif
     enddo
     if (iproc==0) then
