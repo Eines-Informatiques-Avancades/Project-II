@@ -1,10 +1,12 @@
 # Compilator, el optimizator and flags variables
-FC = gfortran
-OPT = -O3
-FLAGS = -Wall -Wextra
+FC = mpif90
+MC = mpirun
+NP = 4
+OPT = -O2
+#FLAGS
 
 # List of source files .f90
-SRCS = initialization.f90 pbc.f90 forces.f90 integrators.f90 readers.f90 main.f90
+SRCS = initialization.f90 pbc.f90 verlet.f90 forces.f90 integrators.f90 readers.f90 main.f90
 
 # List of object files .o
 OBJS = $(SRCS:.f90=.o)
@@ -26,7 +28,7 @@ $(EXE): $(OBJS)
 # Run 
 run: $(EXE)
 	mkdir -p results
-	./$(EXE)
+	$(MC) -np $(NP) ./$(EXE)
 	gnuplot visualization.gn
 	mv *.dat *.png ./results
 
