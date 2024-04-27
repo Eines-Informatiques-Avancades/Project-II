@@ -22,14 +22,17 @@ contains
         k=1
         do i=imin,imax
             do j=1,N
-                rij=(positions(i,1)-positions(j,1))**2+(positions(i,2)-positions(j,2))**2+(positions(i,3)-positions(j,3))**2
-                if (rij<vcutoff2) then
-                    nnlist(i)=nnlist(i)+1
-                    vlist(k)=j
-                    k=k+1
+                if (i/=j) then
+                    rij=(positions(i,1)-positions(j,1))**2+(positions(i,2)-positions(j,2))**2+(positions(i,3)-positions(j,3))**2
+                    if (rij<vcutoff2) then
+                        nnlist(i)=nnlist(i)+1
+                        vlist(k)=j
+                        k=k+1
+                    endif
                 endif
             enddo
         enddo
 
     end subroutine verletlist
+
 end module verlet
