@@ -1,13 +1,14 @@
 module integrators
+    use mpi
     use pbc_mod
+    use verlet
     use Forces_and_Energies
     use initial_positions_module
-
     implicit none
-    public :: vv_integrator, boxmuller, therm_Andersen
 
+    public :: vv_integrator, boxmuller, therm_Andersen
 contains
-    subroutine vv_integrator(positions, velocities, forces, cutoff, L, dt)
+    subroutine vv_integrator(imin,imax,positions, velocities, forces, vlist,nnlist, cutoff, L, dt, max_dist)
         !
         !  Subroutine to update the positions of all particles using the Velocity Verlet
         ! algorithm = performs a single velocity verlet step
@@ -24,34 +25,50 @@ contains
         !    velocities (REAL64[3,N]) : velocities of all N partciles, in reduced units.
 
         implicit none
+        real*8, intent(inout) :: max_dist
+        integer, intent(in) :: imin, imax, vlist(:), nnlist(:)
         real*8, dimension(:,:), intent(inout) :: positions, velocities, forces
         real*8, intent(in)                                 :: cutoff, L, dt
         integer :: N
-        N = size(positions,dim=1)
-        !call VDW_forces(positions, L, cutoff, forces)
-        forces=0.d0
-        positions = positions + (dt*velocities) + (0.5d0*dt*dt*forces)
-        call PBC(positions, L,N)
-        velocities = velocities + (0.5d0*dt*forces)
 
-        !call VDW_forces(positions, L, cutoff, forces)
-        velocities = velocities + 0.5d0*dt*forces
+        N = size(positions,dim=1)
+        ! forces will require the verlet lists
+        call VDW_forces(positions, vlist, nnlist, imin, imax, L, cutoff, max_dist, forces)
+        positions(imin:imax,:) = positions(imin:imax,:) + (dt*velocities(imin:imax,:)) + (0.5d0*dt*dt*forces(imin:imax,:))
+        call PBC(imin, imax, positions, L,N)
+        velocities(imin:imax,:) = velocities(imin:imax,:) + (0.5d0*dt*forces(imin:imax,:))
+        ! CUIDADO tots els workers haurien d'haver acabat de moure les seves particules abans de recalcular les forces
+        ! és a dir, haurem de dividir l'integrador en 2 calls en comptes d'un d sol
+        !call VDW_forces(positions, vlist, nnlist, imin, imax, L, cutoff, max_dist, forces)
+        !velocities(imin:imax,:) = velocities(imin:imax,:) + 0.5d0*dt*forces(imin:imax,:)
     end subroutine vv_integrator
 
-    subroutine main_loop(iproc,N_steps, N_save_pos, dt, L, sigma, nu, nproc, cutoff, positions, velocities)
+    subroutine main_loop(comm,iproc,N_steps, N_save_pos, dt, L, sigma, nu, nproc, cutoff, vcutoff, positions, velocities)
     implicit none
-    integer, intent(in) :: N_steps, N_save_pos,iproc
-    real*8, intent(in) :: dt, cutoff,L, sigma, nu
+    integer, intent(in) :: comm, N_steps, N_save_pos,iproc,nproc
+    real*8, intent(in) :: dt, cutoff, vcutoff, L, sigma, nu
     real*8, allocatable, dimension(:,:), intent(inout) :: positions, velocities 
-    real*8, allocatable, dimension(:,:) :: forces
-    real*8 :: KineticEn, PotentialEn, TotalEn, Tinst, press
-    integer :: N, i, j,unit_dyn=10,unit_ene=11,unit_tem=12,unit_pre=13,imin,imax,nproc,subsystems(nproc,2),Nsub
-    real*8 :: time
+    real*8, allocatable :: forces(:,:)
+
+    real*8 :: KineticEn, PotentialEn, TotalEn, Tinst, press, vcf2
+    integer :: N, i, j,unit_dyn=10,unit_ene=11,unit_tem=12,unit_pre=13,imin,imax,subsystems(nproc,2),Nsub,ierror
+    integer, allocatable, dimension(:) :: gather_counts, gather_displs, nnlist, vlist
+    real*8 :: time, max_dist
+    logical :: update_vlist = .FALSE.
+    
+    !----------------- NEW-------------------------------------
+    real*8 :: temp,volume, Virialterm, global_Virialterm, ierr
+    ! Temp i volume esta definit ja? Per si de cas ho posso, com a prova!
+    temp=298.0
+    volume=L**3.0 
+    
+    vcf2 = vcutoff*vcutoff
     N = size(positions, dim=1)
     ! allocation, open files
     ! write initial positions and velocities at time=0
+    allocate(forces(N,3))
+
     if (iproc==0) then
-        allocate(forces(N,3))
         open(unit_dyn,file = 'dynamics.dat',status="REPLACE")
         open(unit_ene,file = 'energies.dat',status="REPLACE")
         open(unit_tem,file = 'tempinst.dat',status="REPLACE")
@@ -62,31 +79,85 @@ contains
         write(unit_dyn,'(A)') " "
     endif
 
-    do i=1,N_steps 
+    ! Enter nproc as a parameter
+    call assign_subsystem(nproc,N,subsystems)
+    ! iproc goes from 0 to nproc-1, indices go from 1 to nproc
+    imin=subsystems(iproc+1,1) 
+    imax=subsystems(iproc+1,2)
+    Nsub = imax-imin+1
+    ! allocate parallel related structures needed for MPI_ALLGATHERV
+    ! and also for the calculation of forces
+    allocate(gather_counts(nproc),gather_displs(nproc), nnlist(Nsub), vlist(Nsub*Nsub))
+
+    max_dist = 0.d0
+    call MPI_BARRIER(comm,ierror)
+    ! Build Verlet lists
+    call verletlist(imin,imax,N,positions,vcutoff,nnlist,vlist)
+
+    do i=1,N_steps
         time = i*dt
-        ! Enter nproc as a parameter
-        call assign_subsystem(nproc,N,subsystems)
-        ! ----------------- Parallel approach -----------------------
-        imin=subsystems(iproc,1)
-        imax=subsystems(iproc,2)
-        Nsub = imax-imin+1
-        ! Fer Verlet lists
-        ! primer provem d'entrar l'array sencer fer l'slice quan cridem les subrutines
-        ! l'altra opció si això falla és crear una mini matriu amb un loop amb aquests indexs entre imin, imax
-        call vv_integrator(positions(:,imin:imax),velocities(:,imin:imax),forces(:,imin:imax),cutoff,L,dt)
-        call therm_Andersen(velocities(:,imin:imax),nu,sigma,Nsub)
+        call MPI_ALLGATHER(Nsub, 1, MPI_INTEGER, gather_counts, 1, MPI_INTEGER, comm, ierror)
+        ! Calculate displacements for gather operation 
+        ! (tells program where to start writing the positions from each worker)
+        ! first processor writes first particle, etc
+        gather_displs(1) = 0
+        do j = 2, nproc
+            gather_displs(j) = gather_displs(j - 1) + gather_counts(j - 1)
+        end do
+        call MPI_BARRIER(comm,ierror)
+        call vv_integrator(imin,imax,positions,velocities,forces,vlist,nnlist,cutoff,L,dt,max_dist)
+        ! Perform MPI_ALLGATHERV to gather positions from all processes
+        call MPI_BARRIER(comm,ierror)
+        do j=1,3
+            call MPI_ALLGATHERV(positions(imin:imax, j), Nsub, MPI_DOUBLE_PRECISION, &
+            positions(:,j), gather_counts, gather_displs, MPI_DOUBLE_PRECISION, &
+            comm, ierror)
+        enddo
+
+        call therm_Andersen(imin,imax,velocities,nu,sigma,Nsub)
         ! -----------------------------------------------------------
         ! compute kinetic, potential and total energies
-        call kineticE(velocities,KineticEn)
-        call potentialE(positions,cutoff,PotentialEn, boxsize=L)
-        TotalEn=KineticEn+PotentialEn
+        if (iproc==0) then
+            call kineticE(velocities,KineticEn)
+            call potentialE(positions,cutoff,PotentialEn, boxsize=L)
+            TotalEn=KineticEn+PotentialEn
+            ! compute Instantaneous temperature
+            call Tempinst(KineticEn,N,Tinst)
+        endif
+        ! communicate Tinst to the other workers so they can compute their partial pressure
+        call MPI_Bcast(Tinst,     1, MPI_DOUBLE_PRECISION, 0, comm, ierror)
+        
+        !!!!! --------------------- NEW ---------------------------------------------
+        !!  -------------------------------------------------------------------------
+	! compute pressure
+        
+        call MPI_ALLGATHER(Nsub, 1, MPI_INTEGER, gather_counts, 1, MPI_INTEGER, comm, ierror)
+        ! Calculate displacements for gather operation
+        ! (tells program where to start writing the positions from each worker)
+        ! first processor writes first particle, etc
+        gather_displs(1) = 0
+        do j = 2, nproc
+            gather_displs(j) = gather_displs(j - 1) + gather_counts(j - 1)
+        end do
+        call MPI_BARRIER(comm,ierror)
+        call Pressure(vlist,nnlist,imin,imax,positions,L,cutoff,temp,max_dist,Virialterm)
+        print*, Virialterm
+        
+        call MPI_Reduce(Virialterm, global_Virialterm, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+      
+        
+        ! Pressure units are J/m³
+          ! we multiply ideal gas term *Kb=1.38*10**(-23)
+         press= (dble(N)*temp)/volume + (1.d0/(3.d0*volume))*Virialterm
+          !Pressure in reduced units
+           
+        print*, press
+ 
+         !! -------------------------------------------------------------------------------------
 
-        ! compute Instantaneous temperature
-        call Tempinst(KineticEn,N,Tinst)
-        ! compute pressure
-        call Pressure (positions,L,cutoff,Tinst,press)
         ! write variables to output - positions, energies
         if (iproc==0) then
+            print*, ''
             if (MOD(i,N_save_pos).EQ.0) then
                 do j=1,N 
                     write(unit_dyn,'(3(e12.3,x))') positions(j,:)
@@ -97,6 +168,17 @@ contains
                 write(unit_pre,'(2(e12.3,x))') time, press
             endif
         endif
+        ! check if Verlet lists need to be updated
+        if (max_dist > vcf2) then 
+            update_vlist = .TRUE.
+            write(*,'(i3,x,A)') iproc,'speaking: Verlet lists need to be updated.'
+            write(*,*) max_dist
+        endif
+        call MPI_BARRIER(comm, ierror)
+        if (update_vlist) then 
+            max_dist = 0.d0
+            call verletlist(imin,imax,N,positions,vcutoff,nnlist,vlist)
+        endif
     enddo
     if (iproc==0) then
         deallocate(forces)
@@ -105,6 +187,7 @@ contains
         close(unit_tem)
         close(unit_pre)
     endif
+    deallocate(nnlist, vlist)
     end subroutine main_loop
 
     subroutine boxmuller(sigma, x1, x2, xout1, xout2)
@@ -117,14 +200,15 @@ contains
    
     end subroutine boxmuller
 
-    subroutine therm_Andersen(velocities,nu,sigma,N)
+    subroutine therm_Andersen(imin,imax,velocities,nu,sigma,N)
     implicit none
-    integer :: i, j, seed, N
+    integer, intent(in) :: imin,imax
     real*8, intent(in) :: nu, sigma
     real*8, dimension(:,:), intent(inout) :: velocities 
     real*8 :: x1, x2, xout1, xout2
+    integer :: i, j, seed, N
    
-    do i=1,N
+    do i=imin,imax
         call random_number(x1)
         if (x1 < nu) then
             do j=1,3
@@ -136,34 +220,5 @@ contains
         endif
     enddo
     end subroutine therm_Andersen
-
-    subroutine verletlist(imin,imax,N,positions,vcutoff,nnlist,vlist)
-        implicit none
-        integer, intent(in) :: imin, imax, N
-        integer, intent(out) :: nnlist(imin:imax), vlist(:) !(# neighbors x part), (i_neighbor)
-        real*8, dimension(:,:), intent(in) :: positions
-        real*8, intent(in) :: vcutoff
-        integer :: i,j,k
-        real*8 :: rij, vcutoff2
-
-        vcutoff2=vcutoff*vcutoff
-
-        do i=imin,imax
-            nnlist(i)=0
-        enddo
-
-        k=1
-        do i=imin,imax
-            do j=1,N
-                rij=(positions(i,1)-positions(j,1))**2+(positions(i,2)-positions(j,2))**2+(positions(i,3)-positions(j,3))**2
-                if (rij<vcutoff2) then
-                    nnlist(i)=nnlist(i)+1
-                    vlist(k)=j
-                    k=k+1
-                endif
-            enddo
-        enddo
-
-    end subroutine verletlist
 end module integrators
 
