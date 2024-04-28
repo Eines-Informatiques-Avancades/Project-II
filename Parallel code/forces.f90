@@ -6,7 +6,8 @@ implicit none
     public :: Pressure, VDW_forces, potentialE, kineticE
 
 contains
-        subroutine Pressure (start_index,end_index,nprocs,iproc,positions,boxsize,cutoff,temp,press)
+        subroutine Pressure (vlist,nnlist,imin,imax,positions,boxsize,cutoff,temp,max_dist,Virialterm)
+
         !This function calculates the pressure done by a number of particles (given by the number of position elements) in a
         !box of a certain size at a certain temperature. The cutoff is used to set an interacting range of the particles.
         ! Pressure has to terms: Ideal gas contribution Term (thermal motion) and the virial contribution term (interaction
@@ -27,7 +28,7 @@ contains
 
                 Double precision, dimension(:,:), intent(in) :: positions
                 Double precision, intent(in) :: cutoff,temp,boxsize
-                Double precision, intent(out) :: press
+                !Double precision, intent(out) :: press
                 
         !VARIABLES:
         !r_ij : relative position vector between pair of particles, double precision dim= (3,1)
@@ -40,54 +41,60 @@ contains
                 Double precision, dimension(3,1) :: r_ij
                 Double precision, dimension(3) :: f_ij
                 Double precision :: d_ij, volume, Virialterm, cf2
-                Integer ::  npart,i,j
-                Integer :: nprocs, iproc, particles_per_proc, start_index, end_index
+
+                !Integer ::  npart,i,j
+                !Integer :: nprocs, iproc, particles_per_proc, start_index, end_index
                 Integer :: rank, counter, particulaInt
                 Double precision :: global_Virialterm
-		Integer :: nnlist(start_index:end_index)
-                integer, allocatable :: vlist(:)
+		!Integer :: nnlist(start_index:end_index)
+                !integer, allocatable :: vlist(:)
+
                 Double precision :: remainder
-
-
-        Press=0.d0
+                integer, intent(in) :: vlist(:),nnlist(:), imin,imax
+                Integer ::  npart,i,j,jj,jmin,jmax,nneighbors=0
+                Double precision, intent(out) :: max_dist
+                 
         Virialterm=0.d0
         !Volume and number of particles:
         volume= dble(boxsize*boxsize*boxsize)
         npart= int(size(positions,dim=1))
         cf2 = cutoff*cutoff
+        
+        max_dist=0.0
         !call PBC(positions, boxsize, npart)
         !Force between particles:
 
         !print *, 'Number of particles: ', npart
         !print*, 'Index of the particles: ', positions
 
-        particles_per_proc = npart/nprocs
-        remainder = mod(npart, nprocs)
+        !particles_per_proc = npart/nprocs
+        !remainder = mod(npart, nprocs)
 
         !print *, iproc, 'This is my rank'
 
-        if (iproc < remainder) then
-                start_index = iproc * (particles_per_proc + 1)
-                end_index = start_index + particles_per_proc
-        else
-                start_index = iproc * particles_per_proc + remainder
-                end_index = start_index + particles_per_proc - 1
-        end if
+        !if (iproc < remainder) then
+        !        start_index = iproc * (particles_per_proc + 1)
+        !        end_index = start_index + particles_per_proc
+        !else
+          !      start_index = iproc * particles_per_proc + remainder
+         !       end_index = start_index + particles_per_proc - 1
+        !end if
 
         !print *, 'Rank: ', iproc, 'Start index: ', start_index, 'End index: ', end_index
 
         !allocate(nnlist(npart))
         !allocate(vlist(npart))
 
-        do i = start_index, end_index
-                call verletlist(start_index, end_index, npart, positions, cutoff, nnlist, vlist)
-                !print*, '4'
-                counter=1
-                do j=counter, counter+nnlist(i)-1
-                        particulaInt=vlist(j)
-                        r_ij(1,1)=positions(i,1)-positions(particulaInt,1)
-                        r_ij(2,1)=positions(i,2)-positions(particulaInt,2)
-                        r_ij(3,1)=positions(i,3)-positions(particulaInt,3)
+          do i =imin,imax
+                        jmin = jmax+1
+                        nneighbors = nnlist(i-imin+1) ! first particle is i = imin and first index in nnlist to check is 1
+                        jmax = jmin+nneighbors-1
+                        do jj=jmin,jmax ! indices inside Verlet list that point to the neighbors of particle i       do i = start_index, end_index
+                        j =vlist(jj)
+                
+                        r_ij(1,1)=positions(i,1)-positions(j,1)
+                        r_ij(2,1)=positions(i,2)-positions(j,2)
+                        r_ij(3,1)=positions(i,3)-positions(j,3)
 
                         call minimum_image(r_ij(1,1), boxsize)
                         call minimum_image(r_ij(2,1), boxsize)
@@ -107,8 +114,11 @@ contains
                                 Virialterm = Virialterm + dot_product(r_ij(:,1),f_ij)
                          end if
                          
-                   end do
-                   counter=counter+nnlist(i)
+                     if (d_ij> max_dist) then
+			max_dist = d_ij   
+			end if 
+		end do
+                   
           end do
 
                   ! Gather all Virialterm values onto root process (rank 0)
@@ -132,12 +142,12 @@ contains
           !global_Virialterm és el output, es redefineix després:
           !deallocate(nnlist, vlist) !?
 
+
           !call MPI_Reduce(Virialterm, global_Virialterm, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
 
-          Virialterm=global_Virialterm
           ! Pressure units are J/m³
           ! we multiply ideal gas term *Kb=1.38*10**(-23)
-          press= (dble(npart)*temp)/volume + (1.d0/(3.d0*volume))*Virialterm
+          !press= (dble(npart)*temp)/volume + (1.d0/(3.d0*volume))*Virialterm
           !Pressure in reduced units
       end subroutine Pressure
 
@@ -158,7 +168,8 @@ contains
                 Double precision, dimension(:,:), intent(in) :: positions
                 double precision, dimension(:,:), intent(inout) :: vdw_force
                 Double precision, intent(in) :: cutoff,boxsize
-                Double precision, intent(inout) :: max_dist
+
+                Double precision, intent(out) :: max_dist
                 
                  !VARIABLES:
                     !r_ij : relative position vector between pair of particles, double precision dim= (3,1)
@@ -173,6 +184,8 @@ contains
                 cf2 = cutoff*cutoff
                 vdw_force = 0.d0
                 jmax = 0
+
+                max_dist=0.0
 
                 do i=imin,imax
                         jmin = jmax+1

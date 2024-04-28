@@ -9,6 +9,7 @@ module integrators
     public :: vv_integrator1,vv_integrator2, boxmuller, therm_Andersen
 contains
     subroutine vv_integrator1(imin,imax,positions, velocities, forces, vlist,nnlist, cutoff, L, dt)
+
         !
         !  Subroutine to update the positions of each worker's assigned particles using the first step 
         !  of the Velocity Verlet integrator.
@@ -31,7 +32,9 @@ contains
         !    velocities (REAL64[3,N]) : velocities of all N partciles, in reduced units.
 
         implicit none
+
         real*8 :: max_dist
+        
         integer, intent(in) :: imin, imax, vlist(:), nnlist(:)
         real*8, dimension(:,:), intent(inout) :: positions, velocities, forces
         real*8, intent(in)                                 :: cutoff, L, dt
@@ -71,10 +74,18 @@ contains
     real*8 :: KineticEn, PotentialEn, TotalEn, Tinst, press, vcf2
     integer :: N, i, j,unit_dyn=10,unit_ene=11,unit_tem=12,unit_pre=13,imin,imax,subsystems(nproc,2),Nsub,ierror
     integer, allocatable, dimension(:) :: gather_counts, gather_displs, nnlist, vlist
+
     real*8 :: time, max_dist,local_kineticEn
     logical :: update_vlist = .FALSE.
+    !----------------- NEW-------------------------------------
+    real*8 :: temp,volume, Virialterm, global_Virialterm, ierr
+    ! Temp i volume esta definit ja? Per si de cas ho posso, com a prova!
+    temp=298.0
+    volume=L**3.0 
+    
     vcf2 = vcutoff*vcutoff
     kineticEn=0.d0
+
     N = size(positions, dim=1)
     ! allocation, open files
     ! write initial positions and velocities at time=0
@@ -116,15 +127,18 @@ contains
             gather_displs(j) = gather_displs(j - 1) + gather_counts(j - 1)
         end do
         call MPI_BARRIER(comm,ierror)
+        
         ! First step of Verlet integration
         call vv_integrator1(imin,imax,positions,velocities,forces,vlist,nnlist,cutoff,L,dt)
         ! Perform MPI_ALLGATHERV to update positions from all processes
+        
         call MPI_BARRIER(comm,ierror)
         do j=1,3
             call MPI_ALLGATHERV(positions(imin:imax, j), Nsub, MPI_DOUBLE_PRECISION, &
             positions(:,j), gather_counts, gather_displs, MPI_DOUBLE_PRECISION, &
             comm, ierror)
         enddo
+
         ! Second step of Verlet integration, recalculates actual forces
         call vv_integrator2(imin,imax,positions,velocities,forces,vlist,nnlist,cutoff,L,dt,max_dist)
         call therm_Andersen(imin,imax,velocities,nu,sigma,Nsub)
@@ -143,10 +157,35 @@ contains
         endif
         ! communicate Tinst to the other workers so they can compute their partial pressure
         call MPI_Bcast(Tinst,     1, MPI_DOUBLE_PRECISION, 0, comm, ierror)
-        ! compute pressure
-        ! call Pressure(imin,imax,nproc,iproc,positions,L,cutoff,Tinst,press)
+        
+        !!!!! --------------------- NEW ---------------------------------------------
+        !!  -------------------------------------------------------------------------
+	! compute pressure
+        
+        call MPI_ALLGATHER(Nsub, 1, MPI_INTEGER, gather_counts, 1, MPI_INTEGER, comm, ierror)
+        ! Calculate displacements for gather operation
+        ! (tells program where to start writing the positions from each worker)
+        ! first processor writes first particle, etc
+        gather_displs(1) = 0
+        do j = 2, nproc
+            gather_displs(j) = gather_displs(j - 1) + gather_counts(j - 1)
+        end do
+        call MPI_BARRIER(comm,ierror)
+        call Pressure(vlist,nnlist,imin,imax,positions,L,cutoff,temp,max_dist,Virialterm)
+        print*, Virialterm
+        
+        call MPI_Reduce(Virialterm, global_Virialterm, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+      
+        
+        ! Pressure units are J/m³
+          ! we multiply ideal gas term *Kb=1.38*10**(-23)
+         press= (dble(N)*temp)/volume + (1.d0/(3.d0*volume))*Virialterm
+          !Pressure in reduced units
+           
+        print*, press
         ! write variables to output - positions, energies
         if (iproc==0) then
+            print*, ''
             if (MOD(i,N_save_pos).EQ.0) then
                 do j=1,N 
                     write(unit_dyn,'(3(e12.3,x))') positions(j,:)
