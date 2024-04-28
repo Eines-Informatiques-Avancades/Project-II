@@ -34,13 +34,13 @@ contains
         N = size(positions,dim=1)
         ! forces will require the verlet lists
         call VDW_forces(positions, vlist, nnlist, imin, imax, L, cutoff, max_dist, forces)
-        !forces(imin:imax,:)=0.d0
         positions(imin:imax,:) = positions(imin:imax,:) + (dt*velocities(imin:imax,:)) + (0.5d0*dt*dt*forces(imin:imax,:))
         call PBC(imin, imax, positions, L,N)
-        !velocities = velocities + (0.5d0*dt*forces)
-
-        !call VDW_forces(positions, L, cutoff, forces)
-        !velocities = velocities + 0.5d0*dt*forces
+        velocities(imin:imax,:) = velocities(imin:imax,:) + (0.5d0*dt*forces(imin:imax,:))
+        ! CUIDADO tots els workers haurien d'haver acabat de moure les seves particules abans de recalcular les forces
+        ! és a dir, haurem de dividir l'integrador en 2 calls en comptes d'un d sol
+        !call VDW_forces(positions, vlist, nnlist, imin, imax, L, cutoff, max_dist, forces)
+        !velocities(imin:imax,:) = velocities(imin:imax,:) + 0.5d0*dt*forces(imin:imax,:)
     end subroutine vv_integrator
 
     subroutine main_loop(comm,iproc,N_steps, N_save_pos, dt, L, sigma, nu, nproc, cutoff, vcutoff, positions, velocities)
@@ -48,12 +48,12 @@ contains
     integer, intent(in) :: comm, N_steps, N_save_pos,iproc,nproc
     real*8, intent(in) :: dt, cutoff, vcutoff, L, sigma, nu
     real*8, allocatable, dimension(:,:), intent(inout) :: positions, velocities 
-    real*8, allocatable :: forces(:,:),max_dist(:)
+    real*8, allocatable :: forces(:,:)
 
     real*8 :: KineticEn, PotentialEn, TotalEn, Tinst, press, vcf2
     integer :: N, i, j,unit_dyn=10,unit_ene=11,unit_tem=12,unit_pre=13,imin,imax,subsystems(nproc,2),Nsub,ierror
     integer, allocatable, dimension(:) :: gather_counts, gather_displs, nnlist, vlist
-    real*8 :: time
+    real*8 :: time, max_dist
     logical :: update_vlist = .FALSE.
     vcf2 = vcutoff*vcutoff
     N = size(positions, dim=1)
@@ -71,7 +71,7 @@ contains
         enddo
         write(unit_dyn,'(A)') " "
     endif
-    ! ----------------- Parallel approach -----------------------
+
     ! Enter nproc as a parameter
     call assign_subsystem(nproc,N,subsystems)
     ! iproc goes from 0 to nproc-1, indices go from 1 to nproc
@@ -80,16 +80,15 @@ contains
     Nsub = imax-imin+1
     ! allocate parallel related structures needed for MPI_ALLGATHERV
     ! and also for the calculation of forces
-    allocate(gather_counts(nproc),gather_displs(nproc), nnlist(Nsub), vlist(Nsub*Nsub),max_dist(nproc))
+    allocate(gather_counts(nproc),gather_displs(nproc), nnlist(Nsub), vlist(Nsub*Nsub))
+
     max_dist = 0.d0
     call MPI_BARRIER(comm,ierror)
-    ! Fer Verlet lists
+    ! Build Verlet lists
     call verletlist(imin,imax,N,positions,vcutoff,nnlist,vlist)
+
     do i=1,N_steps
-
         time = i*dt
-        call MPI_BARRIER(comm,ierror)
-
         call MPI_ALLGATHER(Nsub, 1, MPI_INTEGER, gather_counts, 1, MPI_INTEGER, comm, ierror)
         ! Calculate displacements for gather operation 
         ! (tells program where to start writing the positions from each worker)
@@ -98,10 +97,10 @@ contains
         do j = 2, nproc
             gather_displs(j) = gather_displs(j - 1) + gather_counts(j - 1)
         end do
-        call vv_integrator(imin,imax,positions,velocities,forces,vlist,nnlist,cutoff,L,dt,max_dist(iproc))
         call MPI_BARRIER(comm,ierror)
-
+        call vv_integrator(imin,imax,positions,velocities,forces,vlist,nnlist,cutoff,L,dt,max_dist)
         ! Perform MPI_ALLGATHERV to gather positions from all processes
+        call MPI_BARRIER(comm,ierror)
         do j=1,3
             call MPI_ALLGATHERV(positions(imin:imax, j), Nsub, MPI_DOUBLE_PRECISION, &
             positions(:,j), gather_counts, gather_displs, MPI_DOUBLE_PRECISION, &
@@ -136,14 +135,14 @@ contains
             endif
         endif
         ! check if Verlet lists need to be updated
-        if (max_dist(iproc) > vcf2) then 
+        if (max_dist > vcf2) then 
             update_vlist = .TRUE.
             write(*,'(i3,x,A)') iproc,'speaking: Verlet lists need to be updated.'
-            write(*,*) max_dist(iproc)
+            write(*,*) max_dist
         endif
         call MPI_BARRIER(comm, ierror)
         if (update_vlist) then 
-            max_dist(iproc) = 0.d0
+            max_dist = 0.d0
             call verletlist(imin,imax,N,positions,vcutoff,nnlist,vlist)
         endif
     enddo
@@ -154,6 +153,7 @@ contains
         close(unit_tem)
         close(unit_pre)
     endif
+    deallocate(nnlist, vlist)
     end subroutine main_loop
 
     subroutine boxmuller(sigma, x1, x2, xout1, xout2)
