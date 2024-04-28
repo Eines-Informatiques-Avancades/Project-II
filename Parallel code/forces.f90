@@ -286,7 +286,7 @@ contains
         !!!!!!!!-------------------------------------------------------------------------------------------
 
 
-        subroutine  kineticE (velocities,KineticEn)
+        subroutine  kineticE (imin,imax,velocities,KineticEn)
 
                 !Subroutine to calculate the kinetic energy of the particles
 
@@ -296,6 +296,7 @@ contains
                    !Velocities : Velocities of the particles DIM= (npart,d)  (d usually=3)
                    !KineticEn: Total kinetic energy
 
+                Integer, intent(in) :: imin, imax
                 Double precision,allocatable, dimension(:,:),intent(in) :: velocities
                 Double precision, intent(out) :: KineticEn
 
@@ -307,12 +308,9 @@ contains
                 Double precision :: vel_ij
                 Integer ::  npart,i
                 
-                npart= int(size(velocities,dim=1))
                 KineticEn=0.d0
 
-                do i=1,npart
-
-                        ! Paula: Corrected the vector from v_ij(1/2/3,1) to velocities(1/2/i,3) to avoid a 0
+                do i=imin,imax
                         vel_ij=dsqrt((velocities(i,1)**2.d0)+(velocities(i,2)**2.d0)+(velocities(i,3)**2.d0))
                         
                         e_ij= (1.d0/2.d0)*vel_ij*vel_ij
