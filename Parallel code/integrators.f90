@@ -8,7 +8,7 @@ module integrators
 
     public :: vv_integrator1,vv_integrator2, boxmuller, therm_Andersen
 contains
-    subroutine vv_integrator1(imin,imax,positions, velocities, forces, vlist,nnlist, cutoff, L, dt, max_dist)
+    subroutine vv_integrator1(imin,imax,positions, velocities, forces, vlist,nnlist, cutoff, L, dt)
         !
         !  Subroutine to update the positions of each worker's assigned particles using the first step 
         !  of the Velocity Verlet integrator.
@@ -31,7 +31,7 @@ contains
         !    velocities (REAL64[3,N]) : velocities of all N partciles, in reduced units.
 
         implicit none
-        real*8, intent(inout) :: max_dist
+        real*8 :: max_dist
         integer, intent(in) :: imin, imax, vlist(:), nnlist(:)
         real*8, dimension(:,:), intent(inout) :: positions, velocities, forces
         real*8, intent(in)                                 :: cutoff, L, dt
@@ -43,10 +43,6 @@ contains
         positions(imin:imax,:) = positions(imin:imax,:) + (dt*velocities(imin:imax,:)) + (0.5d0*dt*dt*forces(imin:imax,:))
         call PBC(imin, imax, positions, L,N)
         velocities(imin:imax,:) = velocities(imin:imax,:) + (0.5d0*dt*forces(imin:imax,:))
-        ! CUIDADO tots els workers haurien d'haver acabat de moure les seves particules abans de recalcular les forces
-        ! és a dir, haurem de dividir l'integrador en 2 calls en comptes d'un d sol
-        !call VDW_forces(positions, vlist, nnlist, imin, imax, L, cutoff, max_dist, forces)
-        !velocities(imin:imax,:) = velocities(imin:imax,:) + 0.5d0*dt*forces(imin:imax,:)
     end subroutine vv_integrator1
 
     subroutine vv_integrator2(imin,imax,positions, velocities, forces, vlist,nnlist, cutoff, L, dt, max_dist)
@@ -55,7 +51,7 @@ contains
         !  of the Velocity Verlet integrator.
 
         implicit none
-        real*8, intent(inout) :: max_dist
+        real*8, intent(out) :: max_dist
         integer, intent(in) :: imin, imax, vlist(:), nnlist(:)
         real*8, dimension(:,:), intent(inout) :: positions, velocities, forces
         real*8, intent(in)                                 :: cutoff, L, dt
@@ -75,9 +71,10 @@ contains
     real*8 :: KineticEn, PotentialEn, TotalEn, Tinst, press, vcf2
     integer :: N, i, j,unit_dyn=10,unit_ene=11,unit_tem=12,unit_pre=13,imin,imax,subsystems(nproc,2),Nsub,ierror
     integer, allocatable, dimension(:) :: gather_counts, gather_displs, nnlist, vlist
-    real*8 :: time, max_dist
+    real*8 :: time, max_dist,local_kineticEn
     logical :: update_vlist = .FALSE.
     vcf2 = vcutoff*vcutoff
+    kineticEn=0.d0
     N = size(positions, dim=1)
     ! allocation, open files
     ! write initial positions and velocities at time=0
@@ -104,7 +101,6 @@ contains
     ! and also for the calculation of forces
     allocate(gather_counts(nproc),gather_displs(nproc), nnlist(Nsub), vlist(Nsub*Nsub))
 
-    max_dist = 0.d0
     call MPI_BARRIER(comm,ierror)
     ! Build Verlet lists
     call verletlist(imin,imax,N,positions,vcutoff,nnlist,vlist)
@@ -121,7 +117,7 @@ contains
         end do
         call MPI_BARRIER(comm,ierror)
         ! First step of Verlet integration
-        call vv_integrator1(imin,imax,positions,velocities,forces,vlist,nnlist,cutoff,L,dt,max_dist)
+        call vv_integrator1(imin,imax,positions,velocities,forces,vlist,nnlist,cutoff,L,dt)
         ! Perform MPI_ALLGATHERV to update positions from all processes
         call MPI_BARRIER(comm,ierror)
         do j=1,3
@@ -129,20 +125,17 @@ contains
             positions(:,j), gather_counts, gather_displs, MPI_DOUBLE_PRECISION, &
             comm, ierror)
         enddo
-        ! Second step of Verlet integration
+        ! Second step of Verlet integration, recalculates actual forces
         call vv_integrator2(imin,imax,positions,velocities,forces,vlist,nnlist,cutoff,L,dt,max_dist)
-        ! Perform MPI_ALLGATHERV a second time to update positions from all processes for the next timestep
-        call MPI_BARRIER(comm,ierror)
-        do j=1,3
-            call MPI_ALLGATHERV(positions(imin:imax, j), Nsub, MPI_DOUBLE_PRECISION, &
-            positions(:,j), gather_counts, gather_displs, MPI_DOUBLE_PRECISION, &
-            comm, ierror)
-        enddo
         call therm_Andersen(imin,imax,velocities,nu,sigma,Nsub)
         ! -----------------------------------------------------------
         ! compute kinetic, potential and total energies
+        call kineticE(imin, imax,velocities,local_kineticEn)
+        call MPI_BARRIER(comm,ierror)
+        ! gets each local kinetic energy, sums it all into kineticEn, which is a variable that processor 0 keeps
+        call MPI_REDUCE((local_kineticEn, kineticEn, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, comm,
+        REQUEST, ierror))
         if (iproc==0) then
-            call kineticE(velocities,KineticEn)
             call potentialE(positions,cutoff,PotentialEn, boxsize=L)
             TotalEn=KineticEn+PotentialEn
             ! compute Instantaneous temperature
