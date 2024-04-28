@@ -7,6 +7,7 @@ implicit none
 
 contains
         subroutine Pressure (vlist,nnlist,imin,imax,positions,boxsize,cutoff,temp,max_dist,Virialterm)
+
         !This function calculates the pressure done by a number of particles (given by the number of position elements) in a
         !box of a certain size at a certain temperature. The cutoff is used to set an interacting range of the particles.
         ! Pressure has to terms: Ideal gas contribution Term (thermal motion) and the virial contribution term (interaction
@@ -47,6 +48,7 @@ contains
                 Double precision :: global_Virialterm
 		!Integer :: nnlist(start_index:end_index)
                 !integer, allocatable :: vlist(:)
+
                 Double precision :: remainder
                 integer, intent(in) :: vlist(:),nnlist(:), imin,imax
                 Integer ::  npart,i,j,jj,jmin,jmax,nneighbors=0
@@ -140,9 +142,9 @@ contains
           !global_Virialterm és el output, es redefineix després:
           !deallocate(nnlist, vlist) !?
 
+
           !call MPI_Reduce(Virialterm, global_Virialterm, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
 
-          
           ! Pressure units are J/m³
           ! we multiply ideal gas term *Kb=1.38*10**(-23)
           !press= (dble(npart)*temp)/volume + (1.d0/(3.d0*volume))*Virialterm
@@ -166,6 +168,7 @@ contains
                 Double precision, dimension(:,:), intent(in) :: positions
                 double precision, dimension(:,:), intent(inout) :: vdw_force
                 Double precision, intent(in) :: cutoff,boxsize
+
                 Double precision, intent(out) :: max_dist
                 
                  !VARIABLES:
@@ -181,6 +184,7 @@ contains
                 cf2 = cutoff*cutoff
                 vdw_force = 0.d0
                 jmax = 0
+
                 max_dist=0.0
 
                 do i=imin,imax
@@ -295,7 +299,7 @@ contains
         !!!!!!!!-------------------------------------------------------------------------------------------
 
 
-        subroutine  kineticE (velocities,KineticEn)
+        subroutine  kineticE (imin,imax,velocities,KineticEn)
 
                 !Subroutine to calculate the kinetic energy of the particles
 
@@ -305,6 +309,7 @@ contains
                    !Velocities : Velocities of the particles DIM= (npart,d)  (d usually=3)
                    !KineticEn: Total kinetic energy
 
+                Integer, intent(in) :: imin, imax
                 Double precision,allocatable, dimension(:,:),intent(in) :: velocities
                 Double precision, intent(out) :: KineticEn
 
@@ -316,12 +321,9 @@ contains
                 Double precision :: vel_ij
                 Integer ::  npart,i
                 
-                npart= int(size(velocities,dim=1))
                 KineticEn=0.d0
 
-                do i=1,npart
-
-                        ! Paula: Corrected the vector from v_ij(1/2/3,1) to velocities(1/2/i,3) to avoid a 0
+                do i=imin,imax
                         vel_ij=dsqrt((velocities(i,1)**2.d0)+(velocities(i,2)**2.d0)+(velocities(i,3)**2.d0))
                         
                         e_ij= (1.d0/2.d0)*vel_ij*vel_ij

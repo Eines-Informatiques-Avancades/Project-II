@@ -3,7 +3,7 @@
   ! needed for the simulation 
   n_steps = 10              ! Number of simulation steps
   n_save_pos = 1              ! Save positions every n_save_pos steps
-  dt = 0.01,                  ! Timestep 
+  dt = 0.0001,                  ! Timestep 
   n_particles = 125,            ! Number of particles
   L = 6.,                       ! Size of simulation box
   temperature = 300,            ! Temperature (absolute units, K)
