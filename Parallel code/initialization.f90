@@ -44,11 +44,12 @@ contains
         ! end do
 
         if (iproc == 2) then
-        open(4, file='initial_positions.dat')
-        do i = 1, N
-            write(4,*) position(i,1), position(i,2), position(i,3)
-        end do
+            open(4, file='initial_positions.dat')
+            do i = 1, N
+                write(4,*) position(i,1), position(i,2), position(i,3)
+            end do
         close(4)
+
         end if
 
     end subroutine initial_positions

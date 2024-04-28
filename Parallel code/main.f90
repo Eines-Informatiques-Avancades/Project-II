@@ -57,10 +57,9 @@ program main_simulation
 
     call initial_positions(N, L, positions, iproc)
 
-    call MPI_ALLGATHERV(positions(subsystems(iproc+1,1):subsystems(iproc+1,2),:), &
-    subsystems(:,2)-subsystems(:,1)+1, MPI_DOUBLE_PRECISION, positions, &
-    subsystems(:,2)-subsystems(:,1)+1, subsystems(:,1), MPI_DOUBLE_PRECISION, &
-    MPI_COMM_WORLD, ierror)
+    allocate(gather_counts(nproc), gather_displs(nproc))
+
+    call MPI_ALLGATHER(N/nproc,)
 
 
 
