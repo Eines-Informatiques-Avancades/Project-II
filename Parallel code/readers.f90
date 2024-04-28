@@ -10,6 +10,7 @@ subroutine read_parameters(param_file, dt, n_particles, n_steps, n_save_pos, L,&
     !
     ! INPUT:
     !   param_file : The path of the parameter file 
+
     character(len=*), intent(in)        :: param_file
     real*8, intent(inout)               :: dt, temperature, L, cutoff,vcutoff,epsilon,nu
     integer, intent(inout)              :: n_particles, n_steps, n_save_pos,nproc
@@ -18,7 +19,6 @@ subroutine read_parameters(param_file, dt, n_particles, n_steps, n_save_pos, L,&
     integer                              :: unit_nr, iost
     character(len=1024)                  :: msg
     ! Namelist variables
-    
 
     namelist /PARAMS/ n_steps, n_save_pos, dt, n_particles, L, temperature,&
     epsilon,cutoff,vcutoff,nu,nproc,simulation_name
