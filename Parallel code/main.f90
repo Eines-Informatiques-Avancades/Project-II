@@ -13,7 +13,8 @@ program main_simulation
     integer :: N,n_steps,n_save_pos,nproc,ierror,iproc,i
     real*8 :: L,temperature,dt,cutoff,vcutoff,epsilon,sigma,nu
     character (len=500) :: simulation_name
-    real*8, allocatable, dimension(:,:) :: local_positions, all_positions
+    real*8, allocatable, dimension(:,:) :: local_positions, all_positions!, positions
+    integer, intent(out) :: subsystems(nproc,2)
 
 
     call mpi_init(ierror)
@@ -48,16 +49,20 @@ program main_simulation
     ! allocates memory
     allocate(velocities(N,3))
     print*, 'Needed arrays allocated.'
-    allocate(local_positions(N/nproc,3))
-    call initial_positions(N, L, local_positions, iproc)
+    ! allocate(local_positions(N/nproc,3))
 
-    ! if (iproc == 0) then
-    ! print*, local_positions
-    ! endif
+    call assign_subsystem(nproc, N, subsystems) !(i,1)=imin, (i,2)=imax
 
-    if (iproc == 0) then
-        allocate(all_positions(N,3))
-    endif
+    allocate(positions(N,3))
+
+    call initial_positions(N, L, positions, iproc)
+
+    call MPI_ALLGATHERV(positions(subsystems(iproc+1,1):subsystems(iproc+1,2),:), &
+    subsystems(:,2)-subsystems(:,1)+1, MPI_DOUBLE_PRECISION, positions, &
+    subsystems(:,2)-subsystems(:,1)+1, subsystems(:,1), MPI_DOUBLE_PRECISION, &
+    MPI_COMM_WORLD, ierror)
+
+
 
     ! call MPI_ALLGATHER(Nsub, 1, MPI_INTEGER, gather_counts, 1, MPI_INTEGER, comm, ierror)
     ! gather_displs(1) = 0
@@ -69,11 +74,13 @@ program main_simulation
     !     comm, ierror)
     ! enddo
 
+
     if (iproc == 0) then
-        print*, 'All positions gathered.'
-        print*, all_positions
-        deallocate(all_positions)
+        print*, 'Positions gathered.'
+        print*, positions
     endif
+
+
 
 
 
