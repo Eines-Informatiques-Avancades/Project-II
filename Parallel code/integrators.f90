@@ -147,7 +147,7 @@ contains
         call kineticE(imin, imax,velocities,local_kineticEn)
         call MPI_BARRIER(comm,ierror)
         ! gets each local kinetic energy, sums it all into kineticEn, which is a variable that processor 0 keeps
-        call MPI_REDUCE((local_kineticEn, kineticEn, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, comm,
+        call MPI_REDUCE((local_kineticEn, kineticEn, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, comm,&
         REQUEST, ierror))
         if (iproc==0) then
             call potentialE(positions,cutoff,PotentialEn, boxsize=L)
@@ -178,9 +178,9 @@ contains
       
         
         ! Pressure units are J/m³
-          ! we multiply ideal gas term *Kb=1.38*10**(-23)
-         press= (dble(N)*temp)/volume + (1.d0/(3.d0*volume))*Virialterm
-          !Pressure in reduced units
+        ! we multiply ideal gas term *Kb=1.38*10**(-23)
+        press= (dble(N)*temp)/volume + (1.d0/(3.d0*volume))*Virialterm
+        ! Pressure in reduced units
            
         print*, press
         ! write variables to output - positions, energies

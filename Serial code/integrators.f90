@@ -88,6 +88,13 @@ contains
     close(unit_ene)
     close(unit_tem)
     close(unit_pre)
+
+    open(5, file='final_positions.dat')
+    do i = 1, N
+        write(5,*) positions(i,1), positions(i,2), positions(i,3)
+    end do
+    close(5)
+
     end subroutine main_loop
 
     subroutine boxmuller(sigma, x1, x2, xout1, xout2)
@@ -122,5 +129,6 @@ contains
         endif
     enddo
     end subroutine therm_Andersen
+
 end module integrators
 
