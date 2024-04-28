@@ -58,13 +58,13 @@ contains
         !call PBC(positions, boxsize, npart)
         !Force between particles:
 
-        print *, 'Number of particles: ', npart
+        !print *, 'Number of particles: ', npart
         !print*, 'Index of the particles: ', positions
 
         particles_per_proc = npart/nprocs
         remainder = mod(npart, nprocs)
 
-        print *, iproc, 'This is my rank'
+        !print *, iproc, 'This is my rank'
 
         if (iproc < remainder) then
                 start_index = iproc * (particles_per_proc + 1)
@@ -74,14 +74,14 @@ contains
                 end_index = start_index + particles_per_proc - 1
         end if
 
-        print *, 'Rank: ', iproc, 'Start index: ', start_index, 'End index: ', end_index
+        !print *, 'Rank: ', iproc, 'Start index: ', start_index, 'End index: ', end_index
 
         !allocate(nnlist(npart))
         !allocate(vlist(npart))
 
         do i = start_index, end_index
                 call verletlist(start_index, end_index, npart, positions, cutoff, nnlist, vlist)
-                print*, '4'
+                !print*, '4'
                 counter=1
                 do j=counter, counter+nnlist(i)-1
                         particulaInt=vlist(j)
@@ -144,7 +144,6 @@ contains
 
       !!!!!---------------------------------------------------------------------------------------------------------------------
 
-
       subroutine VDW_forces (positions, vlist, nnlist, imin,imax,boxsize, cutoff, max_dist, VDW_force)
               ! Subroutine that calculates the interaction between particles using the Lennard Jones potential
               ! The interacting range is limited by a cutoff distance.
@@ -156,7 +155,7 @@ contains
                    !Cutoff: A range of interaction real double precision 
                    !VDW_force: Total interaction force                       
                 integer, intent(in) :: vlist(:),nnlist(:), imin,imax
-                Double precision, dimension(:,:), intent(inout) :: positions
+                Double precision, dimension(:,:), intent(in) :: positions
                 double precision, dimension(:,:), intent(inout) :: vdw_force
                 Double precision, intent(in) :: cutoff,boxsize
                 Double precision, intent(inout) :: max_dist
@@ -172,49 +171,47 @@ contains
                 Integer ::  npart,i,j,jj,jmin,jmax,nneighbors=0
                 npart= int(size(positions,dim=1))
                 cf2 = cutoff*cutoff
-
                 vdw_force = 0.d0
                 jmax = 0
+
                 do i=imin,imax
                         jmin = jmax+1
                         nneighbors = nnlist(i-imin+1) ! first particle is i = imin and first index in nnlist to check is 1
                         jmax = jmin+nneighbors-1
-                do jj=jmin,jmax
-                        j = vlist(jj)
-                        !Distance between particles:
-                        r_ij(1,1)=positions(i,1)-positions(j,1)
-                        r_ij(2,1)=positions(i,2)-positions(j,2)
-                        r_ij(3,1)=positions(i,3)-positions(j,3)
+                        do jj=jmin,jmax ! indices inside Verlet list that point to the neighbors of particle i
+                                j = vlist(jj)
+                                !Distance between particles:
+                                r_ij(1,1)=positions(i,1)-positions(j,1)
+                                r_ij(2,1)=positions(i,2)-positions(j,2)
+                                r_ij(3,1)=positions(i,3)-positions(j,3)
 
-                        call minimum_image(r_ij(1,1), boxsize)
-                        call minimum_image(r_ij(2,1), boxsize)
-                        call minimum_image(r_ij(3,1), boxsize)
-                        !Module of r_ij
-                        !Compute distance squared
-                        
-                        d_ij=(r_ij(1,1)*r_ij(1,1))+(r_ij(2,1)*r_ij(2,1))+(r_ij(3,1)*r_ij(3,1))
-
-
-                        !Now we compare this distance with the forces cutoff
-                        if (d_ij< cf2) then
-                                !Force made by j to i
-                                vdw_force(i,1) = vdw_force(i,1) + ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(1,1)
-                                vdw_force(i,2) = vdw_force(i,2) + ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(2,1)
-                                vdw_force(i,3) = vdw_force(i,3) + ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(3,1)
-
-                                !Force made by i to j
-                                vdw_force(j,1) = vdw_force(j,1) - ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(1,1)
-                                vdw_force(j,2) = vdw_force(j,2) - ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(2,1)
-                                vdw_force(j,3) = vdw_force(j,3) - ((48.d0 /( d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(3,1)
-
-                        ! we keep the largest distance between particles
-                        else 
+                                !call minimum_image(r_ij(1,1), boxsize)
+                                !call minimum_image(r_ij(2,1), boxsize)
+                                !call minimum_image(r_ij(3,1), boxsize)
+                                !Module of r_ij
+                                !Compute distance squared
                                 
+                                d_ij=(r_ij(1,1)*r_ij(1,1))+(r_ij(2,1)*r_ij(2,1))+(r_ij(3,1)*r_ij(3,1))
+
+
+                                !Now we compare this distance with the forces cutoff
+                                if (d_ij< cf2) then
+                                        !Force made by j to i
+                                        vdw_force(i,1) = vdw_force(i,1) + ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(1,1)
+                                        vdw_force(i,2) = vdw_force(i,2) + ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(2,1)
+                                        vdw_force(i,3) = vdw_force(i,3) + ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(3,1)
+
+                                        ! CUIDADO aquest worker no hauria de modificar les forces de la partícula j (crec)
+                                        !Force made by i to j
+                                        !vdw_force(j,1) = vdw_force(j,1) - ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(1,1)
+                                        !vdw_force(j,2) = vdw_force(j,2) - ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(2,1)
+                                        !vdw_force(j,3) = vdw_force(j,3) - ((48.d0 /( d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(3,1)
+                                endif
+                                ! we keep the largest distance between particles
                                 if (d_ij > max_dist) then 
                                         max_dist = d_ij
                                 endif
-                        endif
-                end do
+                        end do
                 end do
           end subroutine VDW_forces
 
