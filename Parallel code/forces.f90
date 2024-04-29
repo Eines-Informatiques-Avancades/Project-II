@@ -59,7 +59,7 @@ contains
         volume= dble(boxsize*boxsize*boxsize)
         npart= int(size(positions,dim=1))
         cf2 = cutoff*cutoff
-        
+        jmax=0        
         max_dist=0.0
         !call PBC(positions, boxsize, npart)
         !Force between particles:
