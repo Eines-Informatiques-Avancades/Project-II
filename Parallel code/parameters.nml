@@ -1,16 +1,16 @@
 &PARAMS
 
   ! needed for the simulation 
-  n_steps = 100000              ! Number of simulation steps
-  n_save_pos = 100              ! Save positions every n_save_pos steps
-  dt = 0.0001,                  ! Timestep 
-  n_particles = 125,            ! Number of particles
+  n_steps = 10              ! Number of simulation steps
+  n_save_pos = 1              ! Save positions every n_save_pos steps
+  dt = 0.01,                  ! Timestep 
+  n_particles = 64,            ! Number of particles
   L = 6.,                       ! Size of simulation box
   temperature = 300,            ! Temperature (absolute units, K)
   epsilon = 164.56              ! Kr 's epsilon (in K)
   cutoff = 2.,                  ! cutoff for interactions
+  vcutoff = 2.5,                ! cutoff for verlet list (cutoff + buffer)
   nu = 0.1,                     ! Thermostat probability of acceptance
-  nproc = 4                     ! Number of processors used for the simulation in parallel
   ! I/O variables
   simulation_name = "simulation",    ! Simulation name
 

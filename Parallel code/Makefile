@@ -12,7 +12,7 @@ SRCS = initialization.f90 pbc.f90 verlet.f90 forces.f90 integrators.f90 readers.
 OBJS = $(SRCS:.f90=.o)
 
 # Executable name
-EXE = a.out
+EXE = MD.exe
 
 # Files compilation
 all: $(EXE)
@@ -34,7 +34,15 @@ run: $(EXE)
 
 # Delete files .o, .mod and .out
 clean:
-	rm -f $(OBJS) *.mod *out
+	rm -r $(OBJS) *.mod *out *.err *.out HELLO
+
+qsub4:
+	@qsub -q iqtc04.q openmpi.sub
+	@echo "Enviado a cola iqtc04"
+
+qsub7:
+	@qsub -q iqtc07.q openmpi.sub
+	@echo "Enviado a cola iqtc07"
 
 # See the variables used
 print:
