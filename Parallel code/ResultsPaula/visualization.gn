@@ -1,0 +1,51 @@
+# Gnuplot commands to plot the results. To run, write:
+# gnuplot visualization.gn
+
+# ENERGIES 
+
+# Set terminal and output
+set terminal pngcairo size 800,600
+set output "energy_plot.png"
+
+# Set titles and lables
+set title "Energy" font ",18"
+set xlabel "Time(ps)"
+set ylabel "Energy(kJ/mol)"
+set key outside
+
+# Plotting data
+plot "energies.dat" using 1:($2)*1.368 title "Kinetic Energy" with lines lt 1,\
+     "energies.dat" using 1:($3)*1.368 title "Potential Energy" with lines lt 2,\
+     "energies.dat" using 1:($4)*1.368 title "Total Energy" with lines lt 3 
+
+
+# PRESSURE
+
+# Set terminal and output
+set terminal pngcairo size 800,600
+set output "pressure_plot.png"
+
+# Set titles and lables
+set title "Pressure" font ",18"
+set xlabel "Time(ps)"
+set ylabel "Pressure (Pa)"
+unset key
+
+# Plotting data
+plot "pressure.dat" u 1:($2)*0.13*10**7 w l
+
+
+# TEMPERATURE
+
+# Set terminal and output
+set terminal pngcairo size 800,600
+set output "temp_plot.png"
+
+# Set titles and lables
+set title "Temperature" font ",18"
+set xlabel "Time(ps)"
+set ylabel "Temperature (K)"
+unset key
+
+# Plotting data
+plot "tempinst.dat" u 1:($2)*164.56 w l

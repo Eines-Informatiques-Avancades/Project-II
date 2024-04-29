@@ -1,0 +1,581 @@
+/Users/emma/opt/usr/local/bin/mpif90 -O0 -g -c initialization.f90
+/Users/emma/opt/usr/local/bin/mpif90 -O0 -g -c pbc.f90
+/Users/emma/opt/usr/local/bin/mpif90 -O0 -g -c verlet.f90
+/Users/emma/opt/usr/local/bin/mpif90 -O0 -g -c forces.f90
+/Users/emma/opt/usr/local/bin/mpif90 -O0 -g -c integrators.f90
+/Users/emma/opt/usr/local/bin/mpif90 -O0 -g -c readers.f90
+/Users/emma/opt/usr/local/bin/mpif90 -O0 -g -c main.f90
+/Users/emma/opt/usr/local/bin/mpif90 -O0 -g -o a.out initialization.o pbc.o verlet.o forces.o integrators.o readers.o main.o
+mkdir -p results
+/Users/emma/opt/usr/local/bin/mpirun -np 4 ./a.out
+ START OF SIMULATION.
+ Parameters of the simulation loaded.
+ Needed arrays allocated.
+ Needed arrays allocated.
+ Needed arrays allocated.
+ Needed arrays allocated.
+ System initialized.
+ 2
+ index:            1 ...particle            1 has            6  neighbors
+ jmin,jmax =            1           6
+ n_particle            2 at            1
+ n_particle            5 at            2
+ n_particle            6 at            3
+ n_particle           17 at            4
+ n_particle           18 at            5
+ n_particle           21 at            6
+ index:            2 ...particle            2 has            9  neighbors
+ jmin,jmax =            7          15
+ n_particle            1 at            7
+ n_particle            3 at            8
+ n_particle            5 at            9
+ n_particle            6 at           10
+ n_particle            7 at           11
+ n_particle           17 at           12
+ n_particle           18 at           13
+ n_particle           19 at           14
+ n_particle           22 at           15
+ index:            3 ...particle            3 has            9  neighbors
+ jmin,jmax =           16          24
+ n_particle            2 at           16
+ n_particle            4 at           17
+ n_particle            6 at           18
+ n_particle            7 at           19
+ n_particle            8 at           20
+ n_particle           18 at           21
+ n_particle           19 at           22
+ n_particle           20 at           23
+ n_particle           23 at           24
+ index:            4 ...particle            4 has            6  neighbors
+ jmin,jmax =           25          30
+ n_particle            3 at           25
+ n_particle            7 at           26
+ n_particle            8 at           27
+ n_particle           19 at           28
+ n_particle           20 at           29
+ n_particle           24 at           30
+ index:            5 ...particle            5 has            9  neighbors
+ jmin,jmax =           31          39
+ n_particle            1 at           31
+ n_particle            2 at           32
+ n_particle            6 at           33
+ n_particle            9 at           34
+ n_particle           10 at           35
+ n_particle           17 at           36
+ n_particle           21 at           37
+ n_particle           22 at           38
+ n_particle           25 at           39
+ index:            6 ...particle            6 has           13  neighbors
+ jmin,jmax =           40          52
+ n_particle            1 at           40
+ n_particle            2 at           41
+ n_particle            3 at           42
+ n_particle            5 at           43
+ n_particle            7 at           44
+ n_particle            9 at           45
+ n_particle           10 at           46
+ n_particle           11 at           47
+ n_particle           18 at           48
+ n_particle           21 at           49
+ n_particle           22 at           50
+ n_particle           23 at           51
+ n_particle           26 at           52
+ index:            7 ...particle            7 has           13  neighbors
+ jmin,jmax =           53          65
+ n_particle            2 at           53
+ n_particle            3 at           54
+ n_particle            4 at           55
+ n_particle            6 at           56
+ n_particle            8 at           57
+ n_particle           10 at           58
+ n_particle           11 at           59
+ n_particle           12 at           60
+ n_particle           19 at           61
+ n_particle           22 at           62
+ n_particle           23 at           63
+ n_particle           24 at           64
+ n_particle           27 at           65
+ index:            8 ...particle            8 has            9  neighbors
+ jmin,jmax =           66          74
+ n_particle            3 at           66
+ n_particle            4 at           67
+ n_particle            7 at           68
+ n_particle           11 at           69
+ n_particle           12 at           70
+ n_particle           20 at           71
+ n_particle           23 at           72
+ n_particle           24 at           73
+ n_particle           28 at           74
+ index:            9 ...particle            9 has            9  neighbors
+ jmin,jmax =           75          83
+ n_particle            5 at           75
+ n_particle            6 at           76
+ n_particle           10 at           77
+ n_particle           13 at           78
+ n_particle           14 at           79
+ n_particle           21 at           80
+ n_particle           25 at           81
+ n_particle           26 at           82
+ n_particle           29 at           83
+ index:           10 ...particle           10 has           13  neighbors
+ jmin,jmax =           84          96
+ n_particle            5 at           84
+ n_particle            6 at           85
+ n_particle            7 at           86
+ n_particle            9 at           87
+ n_particle           11 at           88
+ n_particle           13 at           89
+ n_particle           14 at           90
+ n_particle           15 at           91
+ n_particle           22 at           92
+ n_particle           25 at           93
+ n_particle           26 at           94
+ n_particle           27 at           95
+ n_particle           30 at           96
+ index:           11 ...particle           11 has           13  neighbors
+ jmin,jmax =           97         109
+ n_particle            6 at           97
+ n_particle            7 at           98
+ n_particle            8 at           99
+ n_particle           10 at          100
+ n_particle           12 at          101
+ n_particle           14 at          102
+ n_particle           15 at          103
+ n_particle           16 at          104
+ n_particle           23 at          105
+ n_particle           26 at          106
+ n_particle           27 at          107
+ n_particle           28 at          108
+ n_particle           31 at          109
+ index:           12 ...particle           12 has            9  neighbors
+ jmin,jmax =          110         118
+ n_particle            7 at          110
+ n_particle            8 at          111
+ n_particle           11 at          112
+ n_particle           15 at          113
+ n_particle           16 at          114
+ n_particle           24 at          115
+ n_particle           27 at          116
+ n_particle           28 at          117
+ n_particle           32 at          118
+ index:           13 ...particle           13 has            6  neighbors
+ jmin,jmax =          119         124
+ n_particle            9 at          119
+ n_particle           10 at          120
+ n_particle           14 at          121
+ n_particle           25 at          122
+ n_particle           29 at          123
+ n_particle           30 at          124
+ index:           14 ...particle           14 has            9  neighbors
+ jmin,jmax =          125         133
+ n_particle            9 at          125
+ n_particle           10 at          126
+ n_particle           11 at          127
+ n_particle           13 at          128
+ n_particle           15 at          129
+ n_particle           26 at          130
+ n_particle           29 at          131
+ n_particle           30 at          132
+ n_particle           31 at          133
+ index:           15 ...particle           15 has            9  neighbors
+ jmin,jmax =          134         142
+ n_particle           10 at          134
+ n_particle           11 at          135
+ n_particle           12 at          136
+ n_particle           14 at          137
+ n_particle           16 at          138
+ n_particle           27 at          139
+ n_particle           30 at          140
+ n_particle           31 at          141
+ n_particle           32 at          142
+ index:           16 ...particle           16 has            6  neighbors
+ jmin,jmax =          143         148
+ n_particle           11 at          143
+ n_particle           12 at          144
+ n_particle           15 at          145
+ n_particle           28 at          146
+ n_particle           31 at          147
+ n_particle           32 at          148
+ 3
+ 4
+ 4
+ 4
+ 4
+ 
+ 2
+ index:            1 ...particle            1 has            6  neighbors
+ jmin,jmax =            1           6
+ n_particle            2 at            1
+ n_particle            5 at            2
+ n_particle            6 at            3
+ n_particle           17 at            4
+ n_particle           18 at            5
+ n_particle           21 at            6
+ index:            2 ...particle            2 has            9  neighbors
+ jmin,jmax =            7          15
+ n_particle            1 at            7
+ n_particle            3 at            8
+ n_particle            5 at            9
+ n_particle            6 at           10
+ n_particle            7 at           11
+ n_particle           17 at           12
+ n_particle           18 at           13
+ n_particle           19 at           14
+ n_particle           22 at           15
+ index:            3 ...particle            3 has            9  neighbors
+ jmin,jmax =           16          24
+ n_particle            2 at           16
+ n_particle            4 at           17
+ n_particle            6 at           18
+ n_particle            7 at           19
+ n_particle            8 at           20
+ n_particle           18 at           21
+ n_particle           19 at           22
+ n_particle           20 at           23
+ n_particle           23 at           24
+ index:            4 ...particle            4 has            6  neighbors
+ jmin,jmax =           25          30
+ n_particle            3 at           25
+ n_particle            7 at           26
+ n_particle            8 at           27
+ n_particle           19 at           28
+ n_particle           20 at           29
+ n_particle           24 at           30
+ index:            5 ...particle            5 has            9  neighbors
+ jmin,jmax =           31          39
+ n_particle            1 at           31
+ n_particle            2 at           32
+ n_particle            6 at           33
+ n_particle            9 at           34
+ n_particle           10 at           35
+ n_particle           17 at           36
+ n_particle           21 at           37
+ n_particle           22 at           38
+ n_particle           25 at           39
+ index:            6 ...particle            6 has           13  neighbors
+ jmin,jmax =           40          52
+ n_particle            1 at           40
+ n_particle            2 at           41
+ n_particle            3 at           42
+ n_particle            5 at           43
+ n_particle            7 at           44
+ n_particle            9 at           45
+ n_particle           10 at           46
+ n_particle           11 at           47
+ n_particle           18 at           48
+ n_particle           21 at           49
+ n_particle           22 at           50
+ n_particle           23 at           51
+ n_particle           26 at           52
+ index:            7 ...particle            7 has           13  neighbors
+ jmin,jmax =           53          65
+ n_particle            2 at           53
+ n_particle            3 at           54
+ n_particle            4 at           55
+ n_particle            6 at           56
+ n_particle            8 at           57
+ n_particle           10 at           58
+ n_particle           11 at           59
+ n_particle           12 at           60
+ n_particle           19 at           61
+ n_particle           22 at           62
+ n_particle           23 at           63
+ n_particle           24 at           64
+ n_particle           27 at           65
+ index:            8 ...particle            8 has            9  neighbors
+ jmin,jmax =           66          74
+ n_particle            3 at           66
+ n_particle            4 at           67
+ n_particle            7 at           68
+ n_particle           11 at           69
+ n_particle           12 at           70
+ n_particle           20 at           71
+ n_particle           23 at           72
+ n_particle           24 at           73
+ n_particle           28 at           74
+ index:            9 ...particle            9 has            9  neighbors
+ jmin,jmax =           75          83
+ n_particle            5 at           75
+ n_particle            6 at           76
+ n_particle           10 at           77
+ n_particle           13 at           78
+ n_particle           14 at           79
+ n_particle           21 at           80
+ n_particle           25 at           81
+ n_particle           26 at           82
+ n_particle           29 at           83
+ index:           10 ...particle           10 has           13  neighbors
+ jmin,jmax =           84          96
+ n_particle            5 at           84
+ n_particle            6 at           85
+ n_particle            7 at           86
+ n_particle            9 at           87
+ n_particle           11 at           88
+ n_particle           13 at           89
+ n_particle           14 at           90
+ n_particle           15 at           91
+ n_particle           22 at           92
+ n_particle           25 at           93
+ n_particle           26 at           94
+ n_particle           27 at           95
+ n_particle           30 at           96
+ index:           11 ...particle           11 has           13  neighbors
+ jmin,jmax =           97         109
+ n_particle            6 at           97
+ n_particle            7 at           98
+ n_particle            8 at           99
+ n_particle           10 at          100
+ n_particle           12 at          101
+ n_particle           14 at          102
+ n_particle           15 at          103
+ n_particle           16 at          104
+ n_particle           23 at          105
+ n_particle           26 at          106
+ n_particle           27 at          107
+ n_particle           28 at          108
+ n_particle           31 at          109
+ index:           12 ...particle           12 has            9  neighbors
+ jmin,jmax =          110         118
+ n_particle            7 at          110
+ n_particle            8 at          111
+ n_particle           11 at          112
+ n_particle           15 at          113
+ n_particle           16 at          114
+ n_particle           24 at          115
+ n_particle           27 at          116
+ n_particle           28 at          117
+ n_particle           32 at          118
+ index:           13 ...particle           13 has            6  neighbors
+ jmin,jmax =          119         124
+ n_particle            9 at          119
+ n_particle           10 at          120
+ n_particle           14 at          121
+ n_particle           25 at          122
+ n_particle           29 at          123
+ n_particle           30 at          124
+ index:           14 ...particle           14 has            9  neighbors
+ jmin,jmax =          125         133
+ n_particle            9 at          125
+ n_particle           10 at          126
+ n_particle           11 at          127
+ n_particle           13 at          128
+ n_particle           15 at          129
+ n_particle           26 at          130
+ n_particle           29 at          131
+ n_particle           30 at          132
+ n_particle           31 at          133
+ index:           15 ...particle           15 has            9  neighbors
+ jmin,jmax =          134         142
+ n_particle           10 at          134
+ n_particle           11 at          135
+ n_particle           12 at          136
+ n_particle           14 at          137
+ n_particle           16 at          138
+ n_particle           27 at          139
+ n_particle           30 at          140
+ n_particle           31 at          141
+ n_particle           32 at          142
+ index:           16 ...particle           16 has            6  neighbors
+ jmin,jmax =          143         148
+ n_particle           11 at          143
+ n_particle           12 at          144
+ n_particle           15 at          145
+ n_particle           28 at          146
+ n_particle           31 at          147
+ n_particle           32 at          148
+ 3
+ 4
+ 4
+ 4
+ 4
+ 
+ 2
+ index:            1 ...particle            1 has            6  neighbors
+ jmin,jmax =            1           6
+ n_particle            2 at            1
+ n_particle            5 at            2
+ n_particle            6 at            3
+ n_particle           17 at            4
+ n_particle           18 at            5
+ n_particle           21 at            6
+ index:            2 ...particle            2 has            9  neighbors
+ jmin,jmax =            7          15
+ n_particle            1 at            7
+ n_particle            3 at            8
+ n_particle            5 at            9
+ n_particle            6 at           10
+ n_particle            7 at           11
+ n_particle           17 at           12
+ n_particle           18 at           13
+ n_particle           19 at           14
+ n_particle           22 at           15
+ index:            3 ...particle            3 has            9  neighbors
+ jmin,jmax =           16          24
+ n_particle            2 at           16
+ n_particle            4 at           17
+ n_particle            6 at           18
+ n_particle            7 at           19
+ n_particle            8 at           20
+ n_particle           18 at           21
+ n_particle           19 at           22
+ n_particle           20 at           23
+ n_particle           23 at           24
+ index:            4 ...particle            4 has            6  neighbors
+ jmin,jmax =           25          30
+ n_particle            3 at           25
+ n_particle            7 at           26
+ n_particle            8 at           27
+ n_particle           19 at           28
+ n_particle           20 at           29
+ n_particle           24 at           30
+ index:            5 ...particle            5 has            9  neighbors
+ jmin,jmax =           31          39
+ n_particle            1 at           31
+ n_particle            2 at           32
+ n_particle            6 at           33
+ n_particle            9 at           34
+ n_particle           10 at           35
+ n_particle           17 at           36
+ n_particle           21 at           37
+ n_particle           22 at           38
+ n_particle           25 at           39
+ index:            6 ...particle            6 has           13  neighbors
+ jmin,jmax =           40          52
+ n_particle            1 at           40
+ n_particle            2 at           41
+ n_particle            3 at           42
+ n_particle            5 at           43
+ n_particle            7 at           44
+ n_particle            9 at           45
+ n_particle           10 at           46
+ n_particle           11 at           47
+ n_particle           18 at           48
+ n_particle           21 at           49
+ n_particle           22 at           50
+ n_particle           23 at           51
+ n_particle           26 at           52
+ index:            7 ...particle            7 has           13  neighbors
+ jmin,jmax =           53          65
+ n_particle            2 at           53
+ n_particle            3 at           54
+ n_particle            4 at           55
+ n_particle            6 at           56
+ n_particle            8 at           57
+ n_particle           10 at           58
+ n_particle           11 at           59
+ n_particle           12 at           60
+ n_particle           19 at           61
+ n_particle           22 at           62
+ n_particle           23 at           63
+ n_particle           24 at           64
+ n_particle           27 at           65
+ index:            8 ...particle            8 has            9  neighbors
+ jmin,jmax =           66          74
+ n_particle            3 at           66
+ n_particle            4 at           67
+ n_particle            7 at           68
+ n_particle           11 at           69
+ n_particle           12 at           70
+ n_particle           20 at           71
+ n_particle           23 at           72
+ n_particle           24 at           73
+ n_particle           28 at           74
+ index:            9 ...particle            9 has            9  neighbors
+ jmin,jmax =           75          83
+ n_particle            5 at           75
+ n_particle            6 at           76
+ n_particle           10 at           77
+ n_particle           13 at           78
+ n_particle           14 at           79
+ n_particle           21 at           80
+ n_particle           25 at           81
+ n_particle           26 at           82
+ n_particle           29 at           83
+ index:           10 ...particle           10 has           13  neighbors
+ jmin,jmax =           84          96
+ n_particle            5 at           84
+ n_particle            6 at           85
+ n_particle            7 at           86
+ n_particle            9 at           87
+ n_particle           11 at           88
+ n_particle           13 at           89
+ n_particle           14 at           90
+ n_particle           15 at           91
+ n_particle           22 at           92
+ n_particle           25 at           93
+ n_particle           26 at           94
+ n_particle           27 at           95
+ n_particle           30 at           96
+ index:           11 ...particle           11 has           13  neighbors
+ jmin,jmax =           97         109
+ n_particle            6 at           97
+ n_particle            7 at           98
+ n_particle            8 at           99
+ n_particle           10 at          100
+ n_particle           12 at          101
+ n_particle           14 at          102
+ n_particle           15 at          103
+ n_particle           16 at          104
+ n_particle           23 at          105
+ n_particle           26 at          106
+ n_particle           27 at          107
+ n_particle           28 at          108
+ n_particle           31 at          109
+ index:           12 ...particle           12 has            9  neighbors
+ jmin,jmax =          110         118
+ n_particle            7 at          110
+ n_particle            8 at          111
+ n_particle           11 at          112
+ n_particle           15 at          113
+ n_particle           16 at          114
+ n_particle           24 at          115
+ n_particle           27 at          116
+ n_particle           28 at          117
+ n_particle           32 at          118
+ index:           13 ...particle           13 has            6  neighbors
+ jmin,jmax =          119         124
+ n_particle            9 at          119
+ n_particle           10 at          120
+ n_particle           14 at          121
+ n_particle           25 at          122
+ n_particle           29 at          123
+ n_particle           30 at          124
+ index:           14 ...particle           14 has            9  neighbors
+ jmin,jmax =          125         133
+ n_particle            9 at          125
+ n_particle           10 at          126
+ n_particle           11 at          127
+ n_particle           13 at          128
+ n_particle           15 at          129
+ n_particle           26 at          130
+ n_particle           29 at          131
+ n_particle           30 at          132
+ n_particle           31 at          133
+ index:           15 ...particle           15 has            9  neighbors
+ jmin,jmax =          134         142
+ n_particle           10 at          134
+ n_particle           11 at          135
+ n_particle           12 at          136
+ n_particle           14 at          137
+ n_particle           16 at          138
+ n_particle           27 at          139
+ n_particle           30 at          140
+ n_particle           31 at          141
+ n_particle           32 at          142
+ index:           16 ...particle           16 has            6  neighbors
+ jmin,jmax =          143         148
+ n_particle           11 at          143
+ n_particle           12 at          144
+ n_particle           15 at          145
+ n_particle           28 at          146
+ n_particle           31 at          147
+ n_particle           32 at          148
+ 3
+ 4
+ 4
+ 4
+ 4
+ 
+END OF SIMULATION.
+gnuplot visualization.gn
+mv *.dat *.png ./results
