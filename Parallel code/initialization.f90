@@ -28,31 +28,21 @@ contains
         real*8, intent(in) :: L
         real(8), dimension(:,:), intent(out) :: position
         real(8) :: a
-        integer :: i, j, k, M
+        integer :: j, k, M
 
         position(:,:) = 0.d0
 
         M = NINT( N**(1.0d0/3.0d0) )
         a = L / dble(M)
 
-        ! do i = 1, M
-            do j = 1, M
-                do k = 1, M
-                    position((j-1)*M + k, 1) = a * (iproc + 0.5d0)
-                    position((j-1)*M + k, 2) = a * (j-0.5d0)
-                    position((j-1)*M + k, 3) = a * (k-0.5d0)
-                end do
+        do j = 1, M
+            do k = 1, M
+                position((j-1)*M + k, 1) = a * (iproc + 0.5d0)
+                position((j-1)*M + k, 2) = a * (j-0.5d0)
+                position((j-1)*M + k, 3) = a * (k-0.5d0)
             end do
-        ! end do
+        end do
 
-        ! if (iproc == 2) then
-        !     open(4, file='initial_positions.dat')
-        !     do i = 1, N
-        !         write(4,*) position(i,1), position(i,2), position(i,3)
-        !     end do
-        ! close(4)
-
-        ! end if
 
     end subroutine initial_positions
 

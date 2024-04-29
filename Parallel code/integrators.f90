@@ -147,8 +147,9 @@ contains
         call kineticE(imin, imax,velocities,local_kineticEn)
         call MPI_BARRIER(comm,ierror)
         ! gets each local kinetic energy, sums it all into kineticEn, which is a variable that processor 0 keeps
-        call MPI_REDUCE((local_kineticEn, kineticEn, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, comm,&
-        REQUEST, ierror))
+        call MPI_REDUCE(local_kineticEn, kineticEn, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, comm, &
+                        ierror)
+        print*, 'first reduce is done'
         if (iproc==0) then
             call potentialE(positions,cutoff,PotentialEn, boxsize=L)
             TotalEn=KineticEn+PotentialEn
@@ -161,31 +162,21 @@ contains
         !!!!! --------------------- NEW ---------------------------------------------
         !!  -------------------------------------------------------------------------
 	! compute pressure
-        
-        call MPI_ALLGATHER(Nsub, 1, MPI_INTEGER, gather_counts, 1, MPI_INTEGER, comm, ierror)
-        ! Calculate displacements for gather operation
-        ! (tells program where to start writing the positions from each worker)
-        ! first processor writes first particle, etc
-        gather_displs(1) = 0
-        do j = 2, nproc
-            gather_displs(j) = gather_displs(j - 1) + gather_counts(j - 1)
-        end do
-        call MPI_BARRIER(comm,ierror)
+        call MPI_BARRIER(comm, ierror)
         call Pressure(vlist,nnlist,imin,imax,positions,L,cutoff,temp,max_dist,Virialterm)
         print*, Virialterm
         
-        call MPI_Reduce(Virialterm, global_Virialterm, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-      
-        
-        ! Pressure units are J/m³
-        ! we multiply ideal gas term *Kb=1.38*10**(-23)
-        press= (dble(N)*temp)/volume + (1.d0/(3.d0*volume))*Virialterm
-        ! Pressure in reduced units
-           
-        print*, press
+        call MPI_Reduce(Virialterm, global_Virialterm, 1,& 
+            MPI_DOUBLE_PRECISION, MPI_SUM, 0, comm, ierror)
+
         ! write variables to output - positions, energies
         if (iproc==0) then
-            print*, ''
+        ! Pressure units are J/m³
+          ! we multiply ideal gas term *Kb=1.38*10**(-23)
+            press= (dble(N)*temp)/volume + (1.d0/(3.d0*volume))*Virialterm
+            !Pressure in reduced units
+             
+          print*, press
             if (MOD(i,N_save_pos).EQ.0) then
                 do j=1,N 
                     write(unit_dyn,'(3(e12.3,x))') positions(j,:)

@@ -9,23 +9,24 @@ program main_simulation
     use readers_mod
     !include 'mpif.h'
     implicit none
-    real*8, allocatable, dimension(:,:) :: velocities 
-    integer :: N,n_steps,n_save_pos,nproc,ierror,iproc,i
+    real*8, allocatable, dimension(:,:) :: positions, velocities 
+    integer, allocatable, dimension(:) :: gather_counts, gather_displs
+    integer :: N,n_steps,n_save_pos,nproc,ierror,iproc,i,j,nsub
     real*8 :: L,temperature,dt,cutoff,vcutoff,epsilon,sigma,nu
     character (len=500) :: simulation_name
-    real*8, allocatable, dimension(:,:) :: local_positions, positions
-    integer :: nsub = 16
-    integer :: x(40), gather_counts(4), gather_displs(4)
-    integer :: j, numprocs
+    real*8, allocatable, dimension(:,:) :: local_positions, all_positions!, positions
+    integer, dimension(:,:), allocatable :: subsystems
+
 
     call mpi_init(ierror)
     call mpi_comm_rank(MPI_COMM_WORLD,iproc,ierror)
-    call MPI_COMM_SIZE(MPI_COMM_WORLD, numprocs, ierror)
+    call mpi_comm_size(MPI_COMM_WORLD,nproc,ierror)
+    allocate(subsystems(nproc,2))
     if (iproc==0) then
         print*, 'START OF SIMULATION.'
         ! reads input file
         call read_parameters("parameters.nml", dt, N, n_steps, n_save_pos, L,&
-        simulation_name, temperature, epsilon, cutoff, vcutoff, nu, nproc)
+        simulation_name, temperature, epsilon, cutoff, vcutoff, nu)
 
         temperature = temperature/epsilon
         sigma = dsqrt(temperature)
@@ -35,7 +36,6 @@ program main_simulation
     call MPI_Bcast(N,           1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierror)
     call MPI_Bcast(n_steps,     1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierror)
     call MPI_Bcast(n_save_pos,  1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierror)
-    call MPI_Bcast(nproc,       1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierror)
 
     ! REAL64 Broadcasting
     call MPI_Bcast(epsilon,     1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierror)
@@ -52,36 +52,38 @@ program main_simulation
     ! allocates memory
     allocate(velocities(N,3))
     print*, 'Needed arrays allocated.'
-    ! allocate(local_positions(N/nproc,3))
-
-    ! call assign_subsystem(nproc, N, subsystems) !(i,1)=imin, (i,2)=imax
-    N=64
-    allocate(local_positions(nsub,3))
-
-    call initial_positions(N, L, local_positions, iproc)
-
+    Nsub = N/nproc
+    allocate(local_positions(Nsub,3))
     allocate(positions(N,3))
     call MPI_BARRIER(MPI_COMM_WORLD, ierror)
     gather_displs = (/0, 16, 32, 48/)
     gather_counts = 16
 
+    call initial_positions(N, L, local_positions, iproc)
+    allocate(gather_counts(nproc), gather_displs(nproc))
+    gather_counts = N/nproc
+    gather_displs(1) = 0
+    do i=2,nproc 
+        gather_displs(i) = gather_displs(i-1)+gather_counts(i-1)
+    enddo
+    print*, iproc,': ', gather_displs
+
+    print*, 'what is going on'
     call MPI_BARRIER(MPI_COMM_WORLD, ierror)
     do j=1,3
-        call MPI_ALLGATHERV(local_positions(:, j), nsub, MPI_DOUBLE_PRECISION, &
-            positions(:,j), gather_counts, gather_displs, &
-            MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, ierror)
+    call MPI_ALLGATHERV(local_positions(:, j), gather_counts(iproc+1), MPI_DOUBLE_PRECISION, &
+                        positions(:,j), gather_counts, gather_displs, &
+                        MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, ierror)
     enddo
     call MPI_BARRIER(MPI_COMM_WORLD, ierror)
 
-    if (iproc == 0) then
-        open(4, file='initial_positions.dat')
-        do i = 1, N
-            write(4,'(3(f5.2,x))') positions(j,:)
-        end do
-        close(4)
-    end if
 
-    deallocate(local_positions)
+    if (iproc == 0) then
+        print*, 'Positions gathered.'
+        do j=1,N
+            write(*,'(3(f5.2,x))') positions(j,:)
+        enddo
+    endif
 
     if (iproc==0) then
         ! call initial_positions(N, L, positions)
