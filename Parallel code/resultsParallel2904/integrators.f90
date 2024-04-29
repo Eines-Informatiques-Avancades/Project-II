@@ -174,7 +174,7 @@ contains
         if (iproc==0) then
         ! Pressure units are J/m³
           ! we multiply ideal gas term *Kb=1.38*10**(-23)
-            press= (dble(N)*temp)/volume + (1.d0/(3.d0*volume))*Virialterm
+            press= (dble(N)*temp)/volume + (1.d0/(3.d0*volume))*global_Virialterm
             !Pressure in reduced units
              
           print*, press
