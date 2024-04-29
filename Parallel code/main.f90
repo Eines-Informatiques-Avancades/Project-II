@@ -54,12 +54,9 @@ program main_simulation
     print*, 'Needed arrays allocated.'
     Nsub = N/nproc
     allocate(local_positions(Nsub,3))
-
-    !call assign_subsystem(nproc, N, subsystems) !(i,1)=imin, (i,2)=imax
-
     allocate(positions(N,3))
 
-    call initial_positions(Nsub, L, local_positions, iproc)
+    call initial_positions(N, L, local_positions, iproc)
     allocate(gather_counts(nproc), gather_displs(nproc))
     gather_counts = N/nproc
     gather_displs(1) = 0
