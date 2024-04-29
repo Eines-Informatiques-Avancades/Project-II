@@ -147,8 +147,8 @@ contains
         call kineticE(imin, imax,velocities,local_kineticEn)
         call MPI_BARRIER(comm,ierror)
         ! gets each local kinetic energy, sums it all into kineticEn, which is a variable that processor 0 keeps
-        call MPI_REDUCE((local_kineticEn, kineticEn, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, comm,
-        REQUEST, ierror))
+        call MPI_REDUCE(local_kineticEn, kineticEn, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, comm, &
+                        ierror)
         if (iproc==0) then
             call potentialE(positions,cutoff,PotentialEn, boxsize=L)
             TotalEn=KineticEn+PotentialEn
@@ -174,7 +174,8 @@ contains
         call Pressure(vlist,nnlist,imin,imax,positions,L,cutoff,temp,max_dist,Virialterm)
         print*, Virialterm
         
-        call MPI_Reduce(Virialterm, global_Virialterm, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+        call MPI_Reduce(Virialterm, global_Virialterm, 1,& 
+            MPI_DOUBLE_PRECISION, MPI_SUM, 0, comm, ierror)
       
         
         ! Pressure units are J/m³
