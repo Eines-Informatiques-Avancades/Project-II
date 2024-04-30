@@ -61,7 +61,7 @@ program main_simulation
     if (N /= nproc**3) then
         print*, 'Initial positions in serial.'
         if (iproc == 0) then
-            call initial_positions_serial(N, L, positions)
+           call initial_positions_serial(N, L, positions)
         endif
         call MPI_Bcast(positions, N*3, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierror)
     else
@@ -97,6 +97,7 @@ program main_simulation
         wtime = mpi_wtime() - wtime
         write(*,'(A,F10.2,A)') "Elapsed time: ", wtime, " seconds."
     endif
+
     ! deallocates memory
     deallocate(velocities,local_positions,positions)
     write(*,'(A)') "END OF SIMULATION."
