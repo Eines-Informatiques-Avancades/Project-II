@@ -32,8 +32,6 @@ contains
         !    velocities (REAL64[3,N]) : velocities of all N partciles, in reduced units.
 
         implicit none
-
-        real*8 :: max_dist
         
         integer, intent(in) :: imin, imax, vlist(:), nnlist(:)
         real*8, dimension(:,:), intent(inout) :: positions, velocities, forces
@@ -42,41 +40,39 @@ contains
 
         N = size(positions,dim=1)
         ! forces will require the verlet lists
-        call VDW_forces(positions, vlist, nnlist, imin, imax, L, cutoff, max_dist, forces)
+        call VDW_forces(positions, vlist, nnlist, imin, imax, cutoff, forces)
         positions(imin:imax,:) = positions(imin:imax,:) + (dt*velocities(imin:imax,:)) + (0.5d0*dt*dt*forces(imin:imax,:))
         call PBC(imin, imax, positions, L,N)
         velocities(imin:imax,:) = velocities(imin:imax,:) + (0.5d0*dt*forces(imin:imax,:))
     end subroutine vv_integrator1
 
-    subroutine vv_integrator2(imin,imax,positions, velocities, forces, vlist,nnlist, cutoff, L, dt, max_dist)
+    subroutine vv_integrator2(imin,imax,positions, velocities, forces, vlist,nnlist, cutoff, L, dt)
         !
         !  Subroutine to update the positions of each worker's assigned particles using the second step 
         !  of the Velocity Verlet integrator.
 
         implicit none
-        real*8, intent(out) :: max_dist
         integer, intent(in) :: imin, imax, vlist(:), nnlist(:)
         real*8, dimension(:,:), intent(inout) :: positions, velocities, forces
         real*8, intent(in)                                 :: cutoff, L, dt
 
 
-        call VDW_forces(positions, vlist, nnlist, imin, imax, L, cutoff, max_dist, forces)
+        call VDW_forces(positions, vlist, nnlist, imin, imax, cutoff, forces)
         velocities(imin:imax,:) = velocities(imin:imax,:) + 0.5d0*dt*forces(imin:imax,:)
     end subroutine vv_integrator2
 
-    subroutine main_loop(comm,iproc,N_steps, N_save_pos, dt, L, sigma, nu, nproc, cutoff, vcutoff, positions, velocities)
+    subroutine main_loop(comm,ierror,iproc,N_steps, N_save_pos, dt, L, sigma, nu, nproc, cutoff, vcutoff, positions, velocities)
     implicit none
-    integer, intent(in) :: comm, N_steps, N_save_pos,iproc,nproc
+    integer, intent(inout) :: ierror
+    integer, intent(in) ::  comm,N_steps, N_save_pos,iproc,nproc
     real*8, intent(in) :: dt, cutoff, vcutoff, L, sigma, nu
     real*8, allocatable, dimension(:,:), intent(inout) :: positions, velocities 
     real*8, allocatable :: forces(:,:)
 
     real*8 :: KineticEn, PotentialEn, TotalEn, Tinst, press, vcf2
-    integer :: N, i, j,unit_dyn=10,unit_ene=11,unit_tem=12,unit_pre=13,imin,imax,subsystems(nproc,2),Nsub,ierror
+    integer :: N, i, j,unit_dyn=10,unit_ene=11,unit_tem=12,unit_pre=13,imin,imax,subsystems(nproc,2),Nsub
     integer, allocatable, dimension(:) :: gather_counts, gather_displs, nnlist, vlist
-
     real*8 :: time, max_dist,local_kineticEn,global_max_dist
-    logical :: update_vlist = .FALSE.
     !----------------- NEW-------------------------------------
     real*8 :: volume, Virialterm, global_Virialterm, ierr
     volume=L**3.0 
@@ -138,11 +134,11 @@ contains
         enddo
 
         ! Second step of Verlet integration, recalculates actual forces
-        call vv_integrator2(imin,imax,positions,velocities,forces,vlist,nnlist,cutoff,L,dt,max_dist)
+        call vv_integrator2(imin,imax,positions,velocities,forces,vlist,nnlist,cutoff,L,dt)
         call therm_Andersen(imin,imax,velocities,nu,sigma,Nsub)
         ! -----------------------------------------------------------
         ! compute kinetic, potential and total energies
-        call kineticE(imin, imax,velocities,local_kineticEn)
+        call kineticE(imin, imax, velocities,local_kineticEn)
         call MPI_BARRIER(comm,ierror)
         ! gets each local kinetic energy, sums it all into kineticEn, which is a variable that processor 0 keeps
         call MPI_REDUCE(local_kineticEn, kineticEn, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, comm, &
@@ -161,7 +157,7 @@ contains
         !!  -------------------------------------------------------------------------
 	! compute pressure
         call MPI_BARRIER(comm, ierror)
-        call Pressure(vlist,nnlist,imin,imax,positions,L,cutoff,Tinst,max_dist,Virialterm)
+        call Pressure(vlist,nnlist,imin,imax,positions,L,cutoff,max_dist,Virialterm)
         
         call MPI_Reduce(Virialterm, global_Virialterm, 1,& 
             MPI_DOUBLE_PRECISION, MPI_SUM, 0, comm, ierror)
