@@ -120,9 +120,9 @@ program main_simulation
     endif
 
     if (iproc == 0) then
-        open(1, file='positions.dat', status='unknown')
+        open(1, file='final_positions.dat', status='unknown')
         do j=1,N
-            write(*,'(3(f5.2,x))') positions(j,:)
+            write(1,'(3(f5.2,x))') positions(j,:)
         enddo
         close(1)
     endif
