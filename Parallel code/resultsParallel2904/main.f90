@@ -55,31 +55,41 @@ program main_simulation
     Nsub = N/nproc
     allocate(local_positions(Nsub,3))
     allocate(positions(N,3))
-
-    call initial_positions(N, L, local_positions, iproc)
-    allocate(gather_counts(nproc), gather_displs(nproc))
-    gather_counts = N/nproc
-    gather_displs(1) = 0
-    do i=2,nproc 
-        gather_displs(i) = gather_displs(i-1)+gather_counts(i-1)
-    enddo
-    print*, iproc,': ', gather_displs
-
-    print*, 'what is going on'
-    call MPI_BARRIER(MPI_COMM_WORLD, ierror)
-    do j=1,3
-    call MPI_ALLGATHERV(local_positions(:, j), gather_counts(iproc+1), MPI_DOUBLE_PRECISION, &
-                        positions(:,j), gather_counts, gather_displs, &
-                        MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, ierror)
-    enddo
-    call MPI_BARRIER(MPI_COMM_WORLD, ierror)
-
-
+    if (nproc == N**(1.0d0/3.0d0)) then
+        call initial_positions_parallel(N, L, local_positions, iproc)
+        allocate(gather_counts(nproc), gather_displs(nproc))
+        gather_counts = N/nproc
+        gather_displs(1) = 0
+        do i=2,nproc 
+            gather_displs(i) = gather_displs(i-1)+gather_counts(i-1)
+        enddo
+        print*, iproc,': ', gather_displs
+    
+        print*, 'what is going on'
+        call MPI_BARRIER(MPI_COMM_WORLD, ierror)
+        do j=1,3
+        call MPI_ALLGATHERV(local_positions(:, j), gather_counts(iproc+1), MPI_DOUBLE_PRECISION, &
+                            positions(:,j), gather_counts, gather_displs, &
+                            MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, ierror)
+        enddo
+        call MPI_BARRIER(MPI_COMM_WORLD, ierror)
+    
+    else if (nproc /= N**(1.0d0/3.0d0)) then
+        if (iproc==0) then
+            call initial_positions_serial(N, L, positions)
+            ! call initial_velocities(N, temperature, velocities)
+            print*, 'System initialized.'
+        endif
+        call MPI_Bcast(positions, N*3, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierror)
+    endif
+    
     if (iproc == 0) then
         print*, 'Positions gathered.'
+        open(10, file='init_positions.dat', status='unknown')
         do j=1,N
-            write(*,'(3(f5.2,x))') positions(j,:)
+            write(10, '(3(f5.2,x))') positions(j,1), positions(j,2), positions(j,3)
         enddo
+        close(10)
     endif
 
     if (iproc==0) then
@@ -96,6 +106,15 @@ program main_simulation
         deallocate(velocities)
         write(*,'(A)') "END OF SIMULATION."
     endif
+
+    if (iproc==0) then
+        open(11, file='final_positions.dat', status='unknown')
+        do j=1,N
+            write(11, '(3(f5.2,x))') positions(j,1), positions(j,2), positions(j,3)
+        enddo
+        close(11)
+    endif
+
     call mpi_finalize(ierror)
     ! deallocate(subsystems)
 end program main_simulation

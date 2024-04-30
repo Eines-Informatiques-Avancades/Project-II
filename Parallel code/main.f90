@@ -59,7 +59,14 @@ program main_simulation
     gather_displs = (/0, 16, 32, 48/)
     gather_counts = 16
 
-    call initial_positions(N, L, local_positions, iproc)
+    if (N**(1.d0/3.d0) /= nproc) then
+        if (iproc == 0) then
+            call initial_positions_serial(N, L, positions)
+        endif
+        call MPI_Bcast(positions, N*3, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierror)
+    else
+        call initial_positions_parallel(N, L, local_positions, iproc)
+    endif
     allocate(gather_counts(nproc), gather_displs(nproc))
     gather_counts = N/nproc
     gather_displs(1) = 0

@@ -4,13 +4,14 @@
 
 module initial_positions_module
     implicit none
-    public :: initial_positions
+    public :: initial_positions_parallel
+    public :: initial_positions_serial
     public :: input_parameters
     public :: initial_velocities
     public :: main
 contains
 
-    subroutine initial_positions(N, L, position, iproc)
+    subroutine initial_positions_parallel(N, L, position, iproc)
         ! 
         ! This subroutine initializes the positions of the particles
         ! in a cubic lattice.
@@ -44,7 +45,42 @@ contains
         end do
 
 
-    end subroutine initial_positions
+    end subroutine initial_positions_parallel
+
+    subroutine initial_positions_serial(N, L, position)
+        ! 
+        ! This subroutine initializes the positions of the particles
+        ! in a cubic lattice.
+
+        ! Args:
+        !   N           (integer, intent(in)):  Number of particles
+        !   L           (integer, intent(in))  Length of the sides of the box
+        !   position    (real(8), dimension(N,3), intent(out)):  Array with the positions of the particles
+
+        ! Returns:
+        !   None
+
+        implicit none
+        integer, intent(in) :: N
+        real*8, intent(in) :: L
+        real(8), dimension(N,3), intent(out) :: position
+        real(8) :: a
+        integer :: i, j, k, M
+
+        M = NINT( N**(1.0d0/3.0d0) )
+        a = L / dble(M)
+
+        do i = 1, M
+            do j = 1, M
+                do k = 1, M
+                    position((i-1)*M**2 + (j-1)*M + k, 1) = a * (i-0.5d0)
+                    position((i-1)*M**2 + (j-1)*M + k, 2) = a * (j-0.5d0)
+                    position((i-1)*M**2 + (j-1)*M + k, 3) = a * (k-0.5d0)
+                end do
+            end do
+        end do
+
+    end subroutine initial_positions_serial
 
     subroutine input_parameters(N, L, T)
         !
@@ -161,7 +197,7 @@ contains
         print *, 'L = ', L
         print *, 'T = ', T
         allocate(position(N,3))
-        call initial_positions(N, L, position, 1)
+        call initial_positions_serial(N, L, position)
         open(2, file='initial_positions.xyz')
         do i = 1, N
             write(2,*) position(i,1), position(i,2), position(i,3)
