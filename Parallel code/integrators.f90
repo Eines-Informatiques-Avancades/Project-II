@@ -78,9 +78,7 @@ contains
     real*8 :: time, max_dist,local_kineticEn
     logical :: update_vlist = .FALSE.
     !----------------- NEW-------------------------------------
-    real*8 :: temp,volume, Virialterm, global_Virialterm, ierr
-    ! Temp i volume esta definit ja? Per si de cas ho posso, com a prova!
-    temp=298.0
+    real*8 :: volume, Virialterm, global_Virialterm, ierr
     volume=L**3.0 
     
     vcf2 = vcutoff*vcutoff
@@ -149,13 +147,13 @@ contains
         ! gets each local kinetic energy, sums it all into kineticEn, which is a variable that processor 0 keeps
         call MPI_REDUCE(local_kineticEn, kineticEn, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, comm, &
                         ierror)
-        print*, 'first reduce is done'
         if (iproc==0) then
             call potentialE(positions,cutoff,PotentialEn, boxsize=L)
             TotalEn=KineticEn+PotentialEn
             ! compute Instantaneous temperature
             call Tempinst(KineticEn,N,Tinst)
-        endif
+        !print*, 'Potential and total Energy computed'
+		endif
         ! communicate Tinst to the other workers so they can compute their partial pressure
         call MPI_Bcast(Tinst,     1, MPI_DOUBLE_PRECISION, 0, comm, ierror)
         
@@ -163,8 +161,8 @@ contains
         !!  -------------------------------------------------------------------------
 	! compute pressure
         call MPI_BARRIER(comm, ierror)
-        call Pressure(vlist,nnlist,imin,imax,positions,L,cutoff,temp,max_dist,Virialterm)
-        print*, Virialterm
+        call Pressure(vlist,nnlist,imin,imax,positions,L,cutoff,Tinst,max_dist,Virialterm)
+        !print*, 'Virialterm'
         
         call MPI_Reduce(Virialterm, global_Virialterm, 1,& 
             MPI_DOUBLE_PRECISION, MPI_SUM, 0, comm, ierror)
@@ -173,7 +171,7 @@ contains
         if (iproc==0) then
         ! Pressure units are J/m³
           ! we multiply ideal gas term *Kb=1.38*10**(-23)
-            press= (dble(N)*temp)/volume + (1.d0/(3.d0*volume))*Virialterm
+            press= (dble(N)*Tinst)/volume + (1.d0/(3.d0*volume))*global_Virialterm
             !Pressure in reduced units
              
           print*, press
@@ -190,8 +188,6 @@ contains
         ! check if Verlet lists need to be updated
         if (max_dist > vcf2) then 
             update_vlist = .TRUE.
-            write(*,'(i3,x,A)') iproc,'speaking: Verlet lists need to be updated.'
-            write(*,*) max_dist
         endif
         call MPI_BARRIER(comm, ierror)
         if (update_vlist) then 

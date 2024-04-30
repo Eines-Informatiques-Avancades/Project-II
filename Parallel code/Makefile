@@ -36,13 +36,14 @@ run: $(EXE)
 clean:
 	rm -r $(OBJS) *.mod *out *.err *.out HELLO
 
+# Send process to queue iqtc04 or iqtc07
 qsub4:
 	@qsub -q iqtc04.q openmpi.sub
-	@echo "Enviado a cola iqtc04"
+	@echo "Sent to queue iqtc04"
 
 qsub7:
 	@qsub -q iqtc07.q openmpi.sub
-	@echo "Enviado a cola iqtc07"
+	@echo "Sent to queue iqtc07"
 
 # See the variables used
 print:
@@ -58,6 +59,8 @@ help:
 	@echo "Available options:"
 	@echo "  make all    : Compiles the program $(EXE)"
 	@echo "  make run    : Runs the program $(EXE)"
+	@echo "  make qsub4  : Runs the process in the queue iqtc04"
+	@echo "  make qsub7  : Runs the process in the queue iqtc07"
 	@echo "  make clean  : Deletes files .o, .mod and .out"
 	@echo "  make print  : Shows the Makefile variables used"
 	@echo "  make help   : Shows this menu"
