@@ -66,12 +66,13 @@ program main_simulation
 
     if (N**(1.d0/3.d0) /= nproc) then
         if (iproc == 0) then
-            call initial_positions_serial(N, L, positions)
+           call initial_positions_serial(N, L, positions)
         endif
         call MPI_Bcast(positions, N*3, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierror)
     else
         call initial_positions_parallel(N, L, local_positions, iproc)
     endif
+
     allocate(gather_counts(nproc), gather_displs(nproc))
     gather_counts = N/nproc
     gather_displs(1) = 0
@@ -82,11 +83,13 @@ program main_simulation
 
     print*, 'what is going on'
     call MPI_BARRIER(MPI_COMM_WORLD, ierror)
-    do j=1,3
-    call MPI_ALLGATHERV(local_positions(:, j), gather_counts(iproc+1), MPI_DOUBLE_PRECISION, &
-                        positions(:,j), gather_counts, gather_displs, &
-                        MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, ierror)
-    enddo
+    if (N**(1.d0/3.d0) == nproc) then
+      do j=1,3
+        call MPI_ALLGATHERV(local_positions(:, j), gather_counts(iproc+1), MPI_DOUBLE_PRECISION, &
+                            positions(:,j), gather_counts, gather_displs, &
+                            MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, ierror)
+      enddo
+    endif
     call MPI_BARRIER(MPI_COMM_WORLD, ierror)
     deallocate(gather_counts,gather_displs)
 
