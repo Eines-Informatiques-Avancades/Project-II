@@ -44,7 +44,7 @@ contains
     real*8, allocatable, dimension(:,:), intent(inout) :: positions, velocities 
     real*8, allocatable, dimension(:,:) :: forces
     real*8 :: KineticEn, PotentialEn, TotalEn, Tinst, press
-    integer :: N, i, j,unit_dyn=10,unit_ene=11,unit_tem=12,unit_pre=13
+    integer :: N, i, j,unit_dyn=10,unit_ene=11,unit_tem=12,unit_pre=13,unit_g_r=14
     real*8 :: time
     double precision, dimension(:), allocatable :: g_r
     integer :: n_bins !, max_r
@@ -55,7 +55,7 @@ contains
     open(unit_ene,file = 'energies.dat',status="REPLACE")
     open(unit_tem,file = 'tempinst.dat',status="REPLACE")
     open(unit_pre,file = 'pressure.dat',status="REPLACE")
-    open(20, file='g_r.dat')
+    open(unit_g_r,file='g_r.dat',status='REPLACE')
     do i=1,N
         write(unit_dyn,'(3(f8.3,x))') positions(i,:)
     enddo
@@ -79,7 +79,7 @@ contains
         ! write variables to output - positions, energies
 
         ! call calculate_g_r(positions, L, N, 100.d0, g_r, N_save_pos, n_bins)
-        call calculate_g_r(positions, L, N, 1.d0, g_r, 1.d0, 1)
+        call calculate_g_r(positions, L, N, 0.1, g_r, 1.d0, 100)
 
         if (MOD(i,N_save_pos).EQ.0) then
             do j=1,N 
@@ -89,9 +89,7 @@ contains
             write(unit_ene,'(4(e12.3,x))') time, KineticEn, PotentialEn, TotalEn
             write(unit_tem,'(2(e12.3,x))') time, Tinst
             write(unit_pre,'(2(e12.3,x))') time, press
-            open(20, file='g_r.dat')
-                write(20,*) g_r
-            close(20)
+            write(unit_g_r,'(2(e12.3,x))') time, g_r(1)
         endif
 
     enddo
