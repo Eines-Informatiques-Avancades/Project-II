@@ -95,9 +95,11 @@ program main_simulation
 
     if (iproc == 0) then
         print*, 'Positions gathered.'
+        open(1, file='init_positions.dat', status='unknown')
         do j=1,N
             write(*,'(3(f5.2,x))') positions(j,:)
         enddo
+        close(1)
     endif
 
     if (iproc==0) then
@@ -115,6 +117,14 @@ program main_simulation
     if (iproc==0) then
         wtime = mpi_wtime() - wtime
         write(*,'(A,F10.2,A)') "Elapsed time: ", wtime, " seconds."
+    endif
+
+    if (iproc == 0) then
+        open(1, file='final_positions.dat', status='unknown')
+        do j=1,N
+            write(1,'(3(f5.2,x))') positions(j,:)
+        enddo
+        close(1)
     endif
 
     deallocate(velocities,local_positions,positions)
