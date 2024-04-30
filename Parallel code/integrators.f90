@@ -75,7 +75,7 @@ contains
     integer :: N, i, j,unit_dyn=10,unit_ene=11,unit_tem=12,unit_pre=13,imin,imax,subsystems(nproc,2),Nsub,ierror
     integer, allocatable, dimension(:) :: gather_counts, gather_displs, nnlist, vlist
 
-    real*8 :: time, max_dist,local_kineticEn
+    real*8 :: time, max_dist,local_kineticEn,global_max_dist
     logical :: update_vlist = .FALSE.
     !----------------- NEW-------------------------------------
     real*8 :: volume, Virialterm, global_Virialterm, ierr
@@ -162,7 +162,6 @@ contains
 	! compute pressure
         call MPI_BARRIER(comm, ierror)
         call Pressure(vlist,nnlist,imin,imax,positions,L,cutoff,Tinst,max_dist,Virialterm)
-        !print*, 'Virialterm'
         
         call MPI_Reduce(Virialterm, global_Virialterm, 1,& 
             MPI_DOUBLE_PRECISION, MPI_SUM, 0, comm, ierror)
@@ -174,7 +173,6 @@ contains
             press= (dble(N)*Tinst)/volume + (1.d0/(3.d0*volume))*global_Virialterm
             !Pressure in reduced units
              
-          print*, press
             if (MOD(i,N_save_pos).EQ.0) then
                 do j=1,N 
                     write(unit_dyn,'(3(e12.3,x))') positions(j,:)
@@ -186,23 +184,22 @@ contains
             endif
         endif
         ! check if Verlet lists need to be updated
-        if (max_dist > vcf2) then 
-            update_vlist = .TRUE.
-        endif
         call MPI_BARRIER(comm, ierror)
-        if (update_vlist) then 
-            max_dist = 0.d0
+        call MPI_Reduce(max_dist,global_max_dist,1,&
+            MPI_DOUBLE_PRECISION,MPI_MAX, 0, comm, ierror)
+        call MPI_Bcast(global_max_dist, 1, MPI_DOUBLE_PRECISION, 0, comm, ierror)
+
+        if (global_max_dist  > vcf2) then
             call verletlist(imin,imax,N,positions,vcutoff,nnlist,vlist)
         endif
     enddo
     if (iproc==0) then
-        deallocate(forces)
         close(unit_dyn)
         close(unit_ene)
         close(unit_tem)
         close(unit_pre)
     endif
-    deallocate(nnlist, vlist)
+    deallocate(forces, nnlist, vlist, gather_counts, gather_displs)
     end subroutine main_loop
 
     subroutine boxmuller(sigma, x1, x2, xout1, xout2)
