@@ -16,11 +16,17 @@ program main_simulation
     character (len=500) :: simulation_name
     real*8, allocatable, dimension(:,:) :: local_positions, all_positions!, positions
     integer, dimension(:,:), allocatable :: subsystems
+    real*8 :: wtime
 
 
     call mpi_init(ierror)
     call mpi_comm_rank(MPI_COMM_WORLD,iproc,ierror)
     call mpi_comm_size(MPI_COMM_WORLD,nproc,ierror)
+
+    if (iproc==0) then
+        wtime = mpi_wtime()
+    endif
+
     allocate(subsystems(nproc,2))
     if (iproc==0) then
         print*, 'START OF SIMULATION.'
@@ -102,6 +108,12 @@ program main_simulation
     ! simulation loop
     call main_loop(MPI_COMM_WORLD,iproc,n_steps,n_save_pos, dt, L, sigma, nu, nproc, cutoff, vcutoff, positions, velocities)
     ! deallocates memory
+
+    if (iproc==0) then
+        wtime = mpi_wtime() - wtime
+        write(*,'(A,F10.2,A)') "Elapsed time: ", wtime, " seconds."
+    endif
+
     if (iproc==0) then
         deallocate(velocities)
         deallocate(positions)
