@@ -15,11 +15,17 @@ program main_simulation
     real*8 :: L,temperature,dt,cutoff,vcutoff,epsilon,sigma,nu
     character (len=500) :: simulation_name
     real*8, allocatable, dimension(:,:) :: local_positions, all_positions!, positions
+    real*8 :: wtime
+
 
 
     call mpi_init(ierror)
     call mpi_comm_rank(MPI_COMM_WORLD,iproc,ierror)
     call mpi_comm_size(MPI_COMM_WORLD,nproc,ierror)
+
+    if (iproc==0) then
+        wtime = mpi_wtime()
+    endif
 
     if (iproc==0) then
         print*, 'START OF SIMULATION.'
@@ -39,7 +45,7 @@ program main_simulation
     ! REAL64 Broadcasting
     call MPI_Bcast(epsilon,     1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierror)
     call MPI_Bcast(cutoff,      1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierror)
-    call MPI_Bcast(vcutoff,      1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierror)
+    call MPI_Bcast(vcutoff,     1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierror)
     call MPI_Bcast(nu,          1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierror)
     call MPI_Bcast(dt,          1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierror)
     call MPI_Bcast(L,           1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierror)
@@ -54,8 +60,18 @@ program main_simulation
     Nsub = N/nproc
     allocate(local_positions(Nsub,3))
     allocate(positions(N,3))
+    call MPI_BARRIER(MPI_COMM_WORLD, ierror)
+    gather_displs = (/0, 16, 32, 48/)
+    gather_counts = 16
 
-    call initial_positions(N, L, local_positions, iproc)
+    if (N**(1.d0/3.d0) /= nproc) then
+        if (iproc == 0) then
+            call initial_positions_serial(N, L, positions)
+        endif
+        call MPI_Bcast(positions, N*3, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierror)
+    else
+        call initial_positions_parallel(N, L, local_positions, iproc)
+    endif
     allocate(gather_counts(nproc), gather_displs(nproc))
     gather_counts = N/nproc
     gather_displs(1) = 0
@@ -91,7 +107,15 @@ program main_simulation
     ! simulation loop
     call main_loop(MPI_COMM_WORLD,iproc,n_steps,n_save_pos, dt, L, sigma, nu, nproc, cutoff, vcutoff, positions, velocities)
     ! deallocates memory
+
+
+    if (iproc==0) then
+        wtime = mpi_wtime() - wtime
+        write(*,'(A,F10.2,A)') "Elapsed time: ", wtime, " seconds."
+    endif
+
     deallocate(velocities,local_positions,positions)
     write(*,'(A)') "END OF SIMULATION."
+
     call mpi_finalize(ierror)
 end program main_simulation

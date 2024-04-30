@@ -1,7 +1,7 @@
 # Compilator, el optimizator and flags variables
 FC = mpif90
 MC = mpirun
-NP = 2
+NP = 5
 OPT = -O2
 #FLAGS
 
