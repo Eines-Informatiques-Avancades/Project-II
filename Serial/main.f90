@@ -5,6 +5,7 @@ program main_simulation
     use Forces_and_Energies
     use integrators
     use readers_mod
+    use gr_module
     implicit none
     real*8, allocatable, dimension(:,:) :: positions, velocities 
     integer :: N,n_steps,n_save_pos
@@ -27,6 +28,7 @@ program main_simulation
     ! simulation loop
     call main_loop(n_steps,n_save_pos, dt, L, sigma, nu, cutoff, positions, velocities)
     ! deallocates memory
+
     deallocate(positions,velocities)
     write(*,'(A)') "END OF SIMULATION."
 end program main_simulation

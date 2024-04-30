@@ -71,27 +71,27 @@ program main_simulation
         call MPI_Bcast(positions, N*3, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierror)
     else
         call initial_positions_parallel(N, L, local_positions, iproc)
-    endif
 
-    allocate(gather_counts(nproc), gather_displs(nproc))
-    gather_counts = N/nproc
-    gather_displs(1) = 0
-    do i=2,nproc 
-        gather_displs(i) = gather_displs(i-1)+gather_counts(i-1)
-    enddo
-    print*, iproc,': ', gather_displs
+        allocate(gather_counts(nproc), gather_displs(nproc))
+        gather_counts = N/nproc
+        gather_displs(1) = 0
+        do i=2,nproc 
+            gather_displs(i) = gather_displs(i-1)+gather_counts(i-1)
+        enddo
+        print*, iproc,': ', gather_displs
 
-    print*, 'what is going on'
-    call MPI_BARRIER(MPI_COMM_WORLD, ierror)
-    if (N**(1.d0/3.d0) == nproc) then
-      do j=1,3
-        call MPI_ALLGATHERV(local_positions(:, j), gather_counts(iproc+1), MPI_DOUBLE_PRECISION, &
-                            positions(:,j), gather_counts, gather_displs, &
-                            MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, ierror)
-      enddo
+        print*, 'what is going on'
+        call MPI_BARRIER(MPI_COMM_WORLD, ierror)
+        if (N**(1.d0/3.d0) == nproc) then
+          do j=1,3
+            call MPI_ALLGATHERV(local_positions(:, j), gather_counts(iproc+1), MPI_DOUBLE_PRECISION, &
+                                positions(:,j), gather_counts, gather_displs, &
+                                MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, ierror)
+          enddo
+        endif
+        call MPI_BARRIER(MPI_COMM_WORLD, ierror)
+        deallocate(gather_counts,gather_displs)
     endif
-    call MPI_BARRIER(MPI_COMM_WORLD, ierror)
-    deallocate(gather_counts,gather_displs)
 
     if (iproc == 0) then
         print*, 'Positions gathered.'

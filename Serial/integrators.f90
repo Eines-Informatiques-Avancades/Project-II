@@ -1,6 +1,7 @@
 module integrators
     use pbc_mod
     use Forces_and_Energies
+    use gr_module
 
     implicit none
     public :: vv_integrator, boxmuller, therm_Andersen
@@ -45,6 +46,8 @@ contains
     real*8 :: KineticEn, PotentialEn, TotalEn, Tinst, press
     integer :: N, i, j,unit_dyn=10,unit_ene=11,unit_tem=12,unit_pre=13
     real*8 :: time
+    double precision, dimension(:), allocatable :: g_r
+    integer :: n_bins !, max_r
     N = size(positions, dim=1)
     allocate(forces(N,3))
     ! open files
@@ -52,11 +55,13 @@ contains
     open(unit_ene,file = 'energies.dat',status="REPLACE")
     open(unit_tem,file = 'tempinst.dat',status="REPLACE")
     open(unit_pre,file = 'pressure.dat',status="REPLACE")
+    open(20, file='g_r.dat')
     do i=1,N
         write(unit_dyn,'(3(f8.3,x))') positions(i,:)
     enddo
     write(unit_dyn,'(A)') " "
     ! write initial positions and velocities at time=0
+    allocate(g_r(1))
     do i=1,N_steps 
         time = i*dt
         call vv_integrator(positions,velocities,forces,cutoff,L,dt)
@@ -73,6 +78,9 @@ contains
         call Pressure (positions,L,cutoff,Tinst,press)
         ! write variables to output - positions, energies
 
+        ! call calculate_g_r(positions, L, N, 100.d0, g_r, N_save_pos, n_bins)
+        call calculate_g_r(positions, L, N, 1.d0, g_r, 1.d0, 1)
+
         if (MOD(i,N_save_pos).EQ.0) then
             do j=1,N 
                 write(unit_dyn,'(3(e12.3,x))') positions(j,:)
@@ -81,9 +89,14 @@ contains
             write(unit_ene,'(4(e12.3,x))') time, KineticEn, PotentialEn, TotalEn
             write(unit_tem,'(2(e12.3,x))') time, Tinst
             write(unit_pre,'(2(e12.3,x))') time, press
+            open(20, file='g_r.dat')
+                write(20,*) g_r
+            close(20)
         endif
+
     enddo
     deallocate(forces)
+    deallocate(g_r)
     close(unit_dyn)
     close(unit_ene)
     close(unit_tem)
@@ -112,7 +125,7 @@ contains
 ! ----------------------------------------------------------------------------
     subroutine therm_Andersen(velocities,nu,sigma,N)
     implicit none
-    integer :: i, j, seed, N
+    integer :: i, j, N
     real*8, intent(in) :: nu, sigma
     real*8, allocatable, dimension(:,:), intent(inout) :: velocities 
     real*8 :: x1, x2, xout1, xout2
