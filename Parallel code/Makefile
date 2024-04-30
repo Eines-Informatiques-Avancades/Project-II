@@ -34,7 +34,7 @@ run: $(EXE)
 
 # Delete files .o, .mod and .out
 clean:
-	rm -r $(OBJS) *.mod *out *.err *.out HELLO
+	rm -r $(OBJS) *.mod *out *.err *.out HELLO *.dat MD.exe
 
 # Send process to queue iqtc04 or iqtc07
 qsub4:
