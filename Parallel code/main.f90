@@ -15,13 +15,12 @@ program main_simulation
     real*8 :: L,temperature,dt,cutoff,vcutoff,epsilon,sigma,nu
     character (len=500) :: simulation_name
     real*8, allocatable, dimension(:,:) :: local_positions, all_positions!, positions
-    integer, dimension(:,:), allocatable :: subsystems
 
 
     call mpi_init(ierror)
     call mpi_comm_rank(MPI_COMM_WORLD,iproc,ierror)
     call mpi_comm_size(MPI_COMM_WORLD,nproc,ierror)
-    allocate(subsystems(nproc,2))
+
     if (iproc==0) then
         print*, 'START OF SIMULATION.'
         ! reads input file
@@ -73,7 +72,7 @@ program main_simulation
                         MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, ierror)
     enddo
     call MPI_BARRIER(MPI_COMM_WORLD, ierror)
-
+    deallocate(gather_counts,gather_displs)
 
     if (iproc == 0) then
         print*, 'Positions gathered.'
@@ -92,10 +91,7 @@ program main_simulation
     ! simulation loop
     call main_loop(MPI_COMM_WORLD,iproc,n_steps,n_save_pos, dt, L, sigma, nu, nproc, cutoff, vcutoff, positions, velocities)
     ! deallocates memory
-    if (iproc==0) then
-        deallocate(velocities)
-        write(*,'(A)') "END OF SIMULATION."
-    endif
+    deallocate(velocities,local_positions,positions)
+    write(*,'(A)') "END OF SIMULATION."
     call mpi_finalize(ierror)
-    ! deallocate(subsystems)
 end program main_simulation
