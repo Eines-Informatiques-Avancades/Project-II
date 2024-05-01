@@ -74,7 +74,7 @@ contains
 
       !!!!!---------------------------------------------------------------------------------------------------------------------
 
-      subroutine VDW_forces(positions, vlist, nnlist, imin,imax, cutoff, VDW_force)
+      subroutine VDW_forces(positions, vlist, nnlist, imin,imax, cutoff, VDW_force, L)
               ! Subroutine that calculates the interaction between particles using the Lennard Jones potential
               ! The interacting range is limited by a cutoff distance.
               implicit none
@@ -87,7 +87,7 @@ contains
                 integer, intent(in) :: vlist(:),nnlist(:), imin,imax
                 Double precision, dimension(:,:), intent(in) :: positions
                 double precision, dimension(:,:), intent(out) :: vdw_force
-                Double precision, intent(in) :: cutoff
+                Double precision, intent(in) :: cutoff, L
                 
                  !VARIABLES:
                     !r_ij : relative position vector between pair of particles, double precision dim= (3,1)
@@ -114,9 +114,9 @@ contains
                                 r_ij(2,1)=positions(i,2)-positions(j,2)
                                 r_ij(3,1)=positions(i,3)-positions(j,3)
 
-                                !call minimum_image(r_ij(1,1), boxsize)
-                                !call minimum_image(r_ij(2,1), boxsize)
-                                !call minimum_image(r_ij(3,1), boxsize)
+                                call minimum_image(r_ij(1,1), L)
+                                call minimum_image(r_ij(2,1), L)
+                                call minimum_image(r_ij(3,1), L)
                                 !Module of r_ij
                                 !Compute distance squared
                                 d_ij=(r_ij(1,1)*r_ij(1,1))+(r_ij(2,1)*r_ij(2,1))+(r_ij(3,1)*r_ij(3,1))
@@ -163,12 +163,13 @@ contains
 
                 Double precision, dimension(3,1) :: r_ij
                 Double precision:: e_ij,d_ij2, cf2
-                Integer ::  npart,i,j,jmin,jmax,jj,nneighbors
+                Integer ::  i,j,jmin,jmax,jj,nneighbors
 
                 potentialEn=0.d0
-                npart= int(size(positions,dim=1))
                 cf2 = cutoff*cutoff
+
                 jmax=0
+
                 do i=imin,imax
                 jmin = jmax+1
                 nneighbors = nnlist(i-imin+1) ! first particle is i = imin and first index in nnlist to check is 1
@@ -180,9 +181,9 @@ contains
                         r_ij(2,1)=positions(i,2)-positions(j,2)
                         r_ij(3,1)=positions(i,3)-positions(j,3)
 
-                        !call minimum_image(r_ij(1,1), boxsize)
-                        !call minimum_image(r_ij(2,1), boxsize)
-                        !call minimum_image(r_ij(3,1), boxsize)
+                        call minimum_image(r_ij(1,1), boxsize)
+                        call minimum_image(r_ij(2,1), boxsize)
+                        call minimum_image(r_ij(3,1), boxsize)
 
                         !THIS WAY WE MAKE SURE THAT r_ij is inside our box
 

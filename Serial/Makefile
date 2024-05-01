@@ -4,7 +4,7 @@ OPT = -O3
 FLAGS = -Wall -Wextra
 
 # List of source files .f90
-SRCS = initialization.f90 pbc.f90 forces.f90 gr.f90 integrators.f90 readers.f90 main.f90
+SRCS = initialization.f90 pbc.f90 block_avg.f90 forces.f90 gr.f90 integrators.f90 readers.f90 main.f90
 
 # List of object files .o
 OBJS = $(SRCS:.f90=.o)
