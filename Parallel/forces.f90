@@ -97,8 +97,8 @@ contains
 
                 Double precision, dimension(3,1) :: r_ij=0.d0
                 Double precision :: d_ij,cf2
-                Integer ::  npart,i,j,jj,jmin,jmax,nneighbors=0
-                npart= int(size(positions,dim=1))
+                Integer ::  i,j,jj,jmin,jmax,nneighbors=0
+
                 cf2 = cutoff*cutoff
                 vdw_force = 0.d0
                 jmax = 0
@@ -119,7 +119,6 @@ contains
                                 !call minimum_image(r_ij(3,1), boxsize)
                                 !Module of r_ij
                                 !Compute distance squared
-                                
                                 d_ij=(r_ij(1,1)*r_ij(1,1))+(r_ij(2,1)*r_ij(2,1))+(r_ij(3,1)*r_ij(3,1))
 
 
@@ -129,12 +128,6 @@ contains
                                         vdw_force(i,1) = vdw_force(i,1) + ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(1,1)
                                         vdw_force(i,2) = vdw_force(i,2) + ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(2,1)
                                         vdw_force(i,3) = vdw_force(i,3) + ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(3,1)
-
-                                        ! CUIDADO aquest worker no hauria de modificar les forces de la partícula j (crec)
-                                        !Force made by i to j
-                                        !vdw_force(j,1) = vdw_force(j,1) - ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(1,1)
-                                        !vdw_force(j,2) = vdw_force(j,2) - ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(2,1)
-                                        !vdw_force(j,3) = vdw_force(j,3) - ((48.d0 /( d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(3,1)
                                 endif
                         end do
                 end do
@@ -147,19 +140,17 @@ contains
 
           !!!!!!!!!!!-------------------------------------------------------------------------------
 
-          subroutine potentialE (positions,cutoff,PotentialEn, boxsize)
+          subroutine potentialE(positions,vlist, nnlist, imin,imax,cutoff,PotentialEn, boxsize)
 
                   !Subroutine to calculate the potential energy between particles using Lennard-Jones potential
 
                 implicit none
-               
-
                 !ARGUMENTS:
                 !Positions : Positions of the particles DIM= (d,npart)  (d usually=3)
                 !Boxsize: We will supose cubic system, double precision
                 !Cutoff: A range of interaction real double precision
                 !PotentialE: Total potential energy
-
+                integer, intent(in) :: vlist(:),nnlist(:), imin,imax
                 Double precision,allocatable, dimension(:,:), intent(in) :: positions
                 Double precision, intent(in) :: cutoff, boxsize
                 Double precision, intent(out) :: PotentialEn
@@ -172,22 +163,26 @@ contains
 
                 Double precision, dimension(3,1) :: r_ij
                 Double precision:: e_ij,d_ij2, cf2
-                Integer ::  npart,i,j
+                Integer ::  npart,i,j,jmin,jmax,jj,nneighbors
 
                 potentialEn=0.d0
                 npart= int(size(positions,dim=1))
                 cf2 = cutoff*cutoff
-                !call PBC(positions, boxsize, npart)
-                do i=1,npart-1
-                do j=i+1,npart
+                jmax=0
+                do i=imin,imax
+                jmin = jmax+1
+                nneighbors = nnlist(i-imin+1) ! first particle is i = imin and first index in nnlist to check is 1
+                jmax = jmin+nneighbors-1
+                do jj=jmin,jmax ! indices inside Verlet list that point to the neighbors of particle i
+                        j = vlist(jj)
                         !Distance between particles:
                         r_ij(1,1)=positions(i,1)-positions(j,1)
                         r_ij(2,1)=positions(i,2)-positions(j,2)
                         r_ij(3,1)=positions(i,3)-positions(j,3)
 
-                        call minimum_image(r_ij(1,1), boxsize)
-                        call minimum_image(r_ij(2,1), boxsize)
-                        call minimum_image(r_ij(3,1), boxsize)
+                        !call minimum_image(r_ij(1,1), boxsize)
+                        !call minimum_image(r_ij(2,1), boxsize)
+                        !call minimum_image(r_ij(3,1), boxsize)
 
                         !THIS WAY WE MAKE SURE THAT r_ij is inside our box
 
@@ -196,11 +191,7 @@ contains
                         d_ij2=(r_ij(1,1)**2)+(r_ij(2,1)**2)+(r_ij(3,1)**2)
                         !Now we compare this distance with the cutoff
                         if (d_ij2 < cf2) then
-                                !d6 = d_ij2*d_ij2*d_ij2 
-                                !d12 = d6*d6 
-                                !e_ij = 4.d0*((1.d0/d12) - (1.d0/d6)) - 4.d0*((1.d0/(cf2**6)) - (1.d0/(cf2**3)))
                                 e_ij = - 4.d0*(1.d0/cutoff**12.d0 - 1.d0 /cutoff**6.d0)+ 4*(1.d0/d_ij2**6.d0-1.d0/d_ij2**3.d0)
-
                                 potentialEn = potentialEn + e_ij
                          end if
                 end do
