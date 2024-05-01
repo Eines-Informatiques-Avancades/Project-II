@@ -68,22 +68,19 @@ contains
     real*8, intent(in) :: dt, cutoff, vcutoff, L, sigma, nu
     real*8, allocatable, dimension(:,:), intent(inout) :: positions, velocities 
     real*8, allocatable :: forces(:,:)
-
     real*8 :: KineticEn, PotentialEn, TotalEn, Tinst, press, vcf2
 
     integer :: unit_dyn=10,unit_ene=11,unit_tem=12,unit_pre=13,unit_g_r=14
     integer :: imin,imax,subsystems(nproc,2),Nsub,N, i, j
     integer, allocatable, dimension(:) :: gather_counts, gather_displs, nnlist, vlist
     real*8 :: time, max_dist,local_kineticEn,local_potentialEn, global_max_dist
-    !----------------- NEW-------------------------------------
-    real*8 :: volume, Virialterm, global_Virialterm, ierr
-    ! double precision, dimension(:), allocatable :: g_r
-
+    real*8 :: volume, Virialterm, global_Virialterm
+    
     volume=L**3.0 
     
     vcf2 = vcutoff*vcutoff
     kineticEn=0.d0
-
+    potentialEn=0.d0
     N = size(positions, dim=1)
     ! allocation, open files
     ! write initial positions and velocities at time=0
@@ -103,17 +100,17 @@ contains
         enddo
     endif
 
-    ! Enter nproc as a parameter
+    ! Divide system in subsystems
     call assign_subsystem(nproc,N,subsystems)
-    ! iproc goes from 0 to nproc-1, indices go from 1 to nproc
-    imin=subsystems(iproc+1,1) 
-    imax=subsystems(iproc+1,2)
+    imin = subsystems(iproc+1,1)
+    imax = subsystems(iproc+1,2)
     Nsub = imax-imin+1
-    ! allocate parallel related structures needed for MPI_ALLGATHERV
-    ! and also for the calculation of forces
     allocate(gather_counts(nproc),gather_displs(nproc), nnlist(Nsub), vlist(Nsub*Nsub))
 
+    ! Quantities needed to share information between processes
+    gather_counts = Nsub
     call MPI_BARRIER(comm,ierror)
+    
     ! Build Verlet lists
     call verletlist(imin,imax,N,positions,vcutoff,nnlist,vlist)
     
@@ -133,7 +130,6 @@ contains
         ! First step of Verlet integration
         call vv_integrator1(imin,imax,positions,velocities,vlist,nnlist,cutoff,L,dt)
         ! Perform MPI_ALLGATHERV to update positions from all processes
-
         call MPI_BARRIER(comm,ierror)
         do j=1,3
             call MPI_ALLGATHERV(positions(imin:imax, j), Nsub, MPI_DOUBLE_PRECISION, &
@@ -143,8 +139,9 @@ contains
         
         ! Second step of Verlet integration, recalculates actual forces
         call vv_integrator2(imin,imax,positions,velocities,vlist,nnlist,cutoff,L,dt)
+        ! Andersen thermostat modifies some velocities
         call therm_Andersen(imin,imax,velocities,nu,sigma,Nsub)
-        ! -----------------------------------------------------------
+  
         ! compute kinetic, potential and total energies
         call kineticE(imin, imax, velocities,local_kineticEn)
         call potentialE(positions, vlist, nnlist, imin, imax,cutoff,local_PotentialEn, boxsize=L)
@@ -154,6 +151,7 @@ contains
                         ierror)
         call MPI_REDUCE(local_potentialEn, potentialEn, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, comm, &
         ierror)
+
         if (iproc==0) then
             TotalEn=KineticEn+PotentialEn
             ! compute Instantaneous temperature
@@ -163,11 +161,8 @@ contains
         call MPI_Bcast(Tinst,     1, MPI_DOUBLE_PRECISION, 0, comm, ierror)
 
 
-        !!!!! --------------------- NEW ---------------------------------------------
-        !!  -------------------------------------------------------------------------
-	! compute pressure
+	    ! compute pressure
         call MPI_BARRIER(comm, ierror)
-
         call Pressure(vlist,nnlist,imin,imax,positions,L,cutoff,max_dist,Virialterm)
         call MPI_BARRIER(comm, ierror)
         call MPI_Reduce(Virialterm, global_Virialterm, 1,& 
