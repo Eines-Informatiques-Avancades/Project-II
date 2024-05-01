@@ -160,19 +160,36 @@ contains
     end subroutine initial_velocities
 
     subroutine assign_subsystem(nproc,N,subsystems)
+        ! Subroutine assigns min and max particle labels assigned to each numbered processor.
+        ! Processor with rank 0 will always have the least possible amount of particles.
+        ! Arguments
+        ! nproc : number of processors used in the simulation run.
+        ! N : number of particles in the simulated system.
+        ! Returns
+        ! subsystems([nproc,2]) : array with min and max labels (columns) for each processor (rows)
         integer, intent(in) :: nproc, N
         integer, intent(out) :: subsystems(nproc,2)
-        integer :: i, Nsubsystem, Nrest
+        integer :: i,j, Nsub(nproc), Nrest
 
-        Nsubsystem=N/nproc
-        Nrest=mod(N,nproc)
+        Nsub = N/Nproc ! minimum number of particles in subsystem
+        Nrest=mod(N,nproc) ! remainder
 
-        do i=1,nproc
-            subsystems(i,1)=1+(i-1)*Nsubsystem !imin
-            subsystems(i,2)=subsystems(i,1)+(Nsubsystem-1) !imax
-        enddo
+        ! if N is not a multiple of nproc, the remaining particles are equally distributed among the 
+        ! processors starting with the highest rank, until there are no particles left
+        if (nrest/=0) then
+            do i = nproc-nrest+1, nproc
+                Nsub(i) = Nsub(i)+1
+            enddo
+        endif
 
-        subsystems(nproc,2)=subsystems(nproc,2)+Nrest
+        subsystems(nproc,2) = N                 ! label of first particle imin
+        subsystems(nproc,1) = N - Nsub(nproc)+1 ! label of last particle imax
+        do i=1,nproc-1 
+            j = nproc-i
+            subsystems(j,2) = subsystems(j+1,1)-1           ! imax depends on imin of processor with rank above
+            subsystems(j,1) = subsystems(j,2)-Nsub(j) +1    ! imin depends on imax of same processor and Nsub of same processor
+        enddo 
+
 
     end subroutine
 
