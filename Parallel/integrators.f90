@@ -70,11 +70,14 @@ contains
     real*8, allocatable :: forces(:,:)
 
     real*8 :: KineticEn, PotentialEn, TotalEn, Tinst, press, vcf2
-    integer :: N, i, j,unit_dyn=10,unit_ene=11,unit_tem=12,unit_pre=13,imin,imax,subsystems(nproc,2),Nsub
+    integer :: unit_dyn=10,unit_ene=11,unit_tem=12,unit_pre=13,unit_g_r=14
+    integer :: imin,imax,subsystems(nproc,2),Nsub,N, i, j
     integer, allocatable, dimension(:) :: gather_counts, gather_displs, nnlist, vlist
     real*8 :: time, max_dist,local_kineticEn,global_max_dist
     !----------------- NEW-------------------------------------
     real*8 :: volume, Virialterm, global_Virialterm, ierr
+    ! double precision, dimension(:), allocatable :: g_r
+
     volume=L**3.0 
     
     vcf2 = vcutoff*vcutoff
@@ -90,10 +93,12 @@ contains
         open(unit_ene,file = 'energies.dat',status="REPLACE")
         open(unit_tem,file = 'tempinst.dat',status="REPLACE")
         open(unit_pre,file = 'pressure.dat',status="REPLACE")
+        ! open(unit_g_r,file='g_r.dat',status='REPLACE')
+        write(unit_dyn,*) N
+        write(unit_dyn,*) 0,"TIMESTEP:", 0
         do i=1,N
-            write(unit_dyn,'(3(f8.3,x))') positions(i,:)
+            write(unit_dyn,*) "Kr",positions(i,:)
         enddo
-        write(unit_dyn,'(A)') " "
     endif
 
     ! Enter nproc as a parameter
@@ -109,7 +114,7 @@ contains
     call MPI_BARRIER(comm,ierror)
     ! Build Verlet lists
     call verletlist(imin,imax,N,positions,vcutoff,nnlist,vlist)
-
+    ! allocate(g_r(1))
     do i=1,N_steps
         time = i*dt
         call MPI_ALLGATHER(Nsub, 1, MPI_INTEGER, gather_counts, 1, MPI_INTEGER, comm, ierror)
@@ -121,11 +126,11 @@ contains
             gather_displs(j) = gather_displs(j - 1) + gather_counts(j - 1)
         end do
         call MPI_BARRIER(comm,ierror)
-        
+
         ! First step of Verlet integration
         call vv_integrator1(imin,imax,positions,velocities,vlist,nnlist,cutoff,L,dt)
         ! Perform MPI_ALLGATHERV to update positions from all processes
-        
+
         call MPI_BARRIER(comm,ierror)
         do j=1,3
             call MPI_ALLGATHERV(positions(imin:imax, j), Nsub, MPI_DOUBLE_PRECISION, &
@@ -152,7 +157,7 @@ contains
 		endif
         ! communicate Tinst to the other workers so they can compute their partial pressure
         call MPI_Bcast(Tinst,     1, MPI_DOUBLE_PRECISION, 0, comm, ierror)
-        
+
         !!!!! --------------------- NEW ---------------------------------------------
         !!  -------------------------------------------------------------------------
 	! compute pressure
@@ -162,21 +167,28 @@ contains
         call MPI_Reduce(Virialterm, global_Virialterm, 1,& 
             MPI_DOUBLE_PRECISION, MPI_SUM, 0, comm, ierror)
 
+        ! if (iproc==0) then
+        !     call calculate_g_r(positions, L, N, 0.1d0, g_r, 2.d0, 200)
+        ! endif
+
+
         ! write variables to output - positions, energies
         if (iproc==0) then
         ! Pressure units are J/m³
           ! we multiply ideal gas term *Kb=1.38*10**(-23)
             press= (dble(N)*Tinst)/volume + (1.d0/(3.d0*volume))*global_Virialterm
             !Pressure in reduced units
-             
+
             if (MOD(i,N_save_pos).EQ.0) then
+                write(unit_dyn,*) N
+                write(unit_dyn,*) time,"TIMESTEP:", i/100
                 do j=1,N 
-                    write(unit_dyn,'(3(e12.3,x))') positions(j,:)
+                    write(unit_dyn,*) "Kr",positions(j,:)
                 enddo 
-                write(unit_dyn,*) " "
                 write(unit_ene,'(4(e12.3,x))') time, KineticEn, PotentialEn, TotalEn
                 write(unit_tem,'(2(e12.3,x))') time, Tinst
                 write(unit_pre,'(2(e12.3,x))') time, press
+                !write(unit_g_r,'(2(e12.3,x))') time, g_r(1)
             endif
         endif
         ! check if Verlet lists need to be updated
@@ -194,40 +206,41 @@ contains
         close(unit_ene)
         close(unit_tem)
         close(unit_pre)
+        !close(unit_g_r)
     endif
     ! deallocate(forces)
     deallocate(nnlist, vlist, gather_counts, gather_displs)
+    !deallocate(g_r)
     end subroutine main_loop
 
     subroutine boxmuller(sigma, x1, x2, xout1, xout2)
-    implicit none
-    real*8 :: pi, sigma, x1, x2, xout1, xout2
-    pi = 4d0*datan(1d0)
-   
-    xout1=sigma*dsqrt(-2d0*(dlog(1d0-x1)))*dcos(2d0*pi*x2)
-    xout2=sigma*dsqrt(-2d0*(dlog(1d0-x1)))*dsin(2d0*pi*x2)
-   
+        implicit none
+        real*8 :: pi, sigma, x1, x2, xout1, xout2
+        pi = 4d0*datan(1d0)
+
+        xout1=sigma*dsqrt(-2d0*(dlog(1d0-x1)))*dcos(2d0*pi*x2)
+        xout2=sigma*dsqrt(-2d0*(dlog(1d0-x1)))*dsin(2d0*pi*x2)
     end subroutine boxmuller
 
     subroutine therm_Andersen(imin,imax,velocities,nu,sigma,N)
-    implicit none
-    integer, intent(in) :: imin,imax
-    real*8, intent(in) :: nu, sigma
-    real*8, dimension(:,:), intent(inout) :: velocities 
-    real*8 :: x1, x2, xout1, xout2
-    integer :: i, j, seed, N
-   
-    do i=imin,imax
-        call random_number(x1)
-        if (x1 < nu) then
-            do j=1,3
-                call random_number(x1)
-                call random_number(x2)
-                call boxmuller(sigma, x1, x2, xout1, xout2)
-                velocities(i,j)=xout1
-            enddo
-        endif
-    enddo
+        implicit none
+        integer, intent(in) :: imin,imax
+        real*8, intent(in) :: nu, sigma
+        real*8, dimension(:,:), intent(inout) :: velocities 
+        real*8 :: x1, x2, xout1, xout2
+        integer :: i, j, seed, N
+
+        do i=imin,imax
+            call random_number(x1)
+            if (x1 < nu) then
+                do j=1,3
+                    call random_number(x1)
+                    call random_number(x2)
+                    call boxmuller(sigma, x1, x2, xout1, xout2)
+                    velocities(i,j)=xout1
+                enddo
+            endif
+        enddo
     end subroutine therm_Andersen
 end module integrators
 
