@@ -6,6 +6,7 @@ program main_simulation
     use integrators
     use readers_mod
     use gr_module
+    use block_average_module
     implicit none
     real*8, allocatable, dimension(:,:) :: positions, velocities 
     integer :: N,n_steps,n_save_pos
@@ -30,5 +31,14 @@ program main_simulation
     ! deallocates memory
 
     deallocate(positions,velocities)
+
+    ! Note: Adjust block_size
+    call compute_and_save_block_averages('temperature.dat', 1000, 2, 'temp_blockavg.dat')
+    call compute_and_save_block_averages('pressure.dat', 1000, 2, 'pressure_blockavg.dat')
+    call compute_and_save_block_averages('gr.dat', 1000, 2, 'gr_blockavg.dat')
+    call compute_and_save_block_averages('energies.dat', 1000, 2, 'energykin_blockavg.dat')
+    call compute_and_save_block_averages('energies.dat', 1000, 3, 'energypot_blockavg.dat')
+    call compute_and_save_block_averages('energies.dat', 1000, 4, 'energytot_blockavg.dat')
+
     write(*,'(A)') "END OF SIMULATION."
 end program main_simulation
