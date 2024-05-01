@@ -2,8 +2,10 @@ module block_average_module
     implicit none
     public :: block_average, read_data_from_file, write_results, compute_and_save_block_averages
 contains
-    subroutine block_average(data, block_size, averages, variances, num_blocks)
-        !!! --- Authors: Rocío Aragoneses, Paula Sierra --- !!!
+
+    subroutine block_average(array, num_data, block_size, total_mean, std_dev)
+        !!! --- Authors: Rocío Aragoneses and Paula Sierra --- !!!
+
         implicit none
         integer :: i, j, num_blocks
         integer, intent(in) :: num_data, block_size
@@ -37,7 +39,7 @@ contains
     end subroutine block_average
 
     subroutine read_data_from_file(filename, data, num_data, column)
-        !!! --- Authors: Rocío Aragoneses --- !!!
+        !!! --- Author: Rocío Aragoneses --- !!!
         implicit none
         character(len=*), intent(in) :: filename
         integer, intent(in) :: column
@@ -69,7 +71,7 @@ contains
     end subroutine read_data_from_file
 
     subroutine write_results(output_file, total_mean, std_dev)
-        !!! --- Authors: Rocío Aragoneses --- !!!
+        !!! --- Author: Rocío Aragoneses --- !!!
         implicit none
         character(len=*), intent(in) :: output_file
         real*8, intent(in) :: total_mean, std_dev
@@ -80,7 +82,7 @@ contains
     end subroutine write_results
 
     subroutine compute_and_save_block_averages(filename, block_size, column, output_file)
-        !!! --- Authors: Rocío Aragoneses --- !!!
+        !!! --- Author: Rocío Aragoneses --- !!!
         implicit none
         real*8, allocatable :: data(:)
         character(len=*), intent(in) :: filename, output_file
