@@ -108,7 +108,7 @@ contains
     imin = subsystems(iproc+1,1)
     imax = subsystems(iproc+1,2)
     Nsub = imax-imin+1
-    allocate(gather_counts(nproc),gather_displs(nproc), nnlist(Nsub), vlist(Nsub*Nsub),g_r(1))
+    allocate(gather_counts(nproc),gather_displs(nproc), nnlist(Nsub), vlist(N*Nsub),g_r(1))
 
     ! Quantities needed to share information between processes
     gather_counts = Nsub
