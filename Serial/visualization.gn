@@ -54,14 +54,14 @@ plot "tempinst.dat" u 1:($2)*164.56 w l
 step_size = 10
 
 #max_value(file, col) = system(sprintf("awk '{print $%d}' %s | sort -n | tail -n 1", col, file))
-stats datafile using 2 nooutput
+stats "g_r.dat" using 2 nooutput
 y_max = STATS_max
 
+set yr [:1.2]
 set xlabel "r"
 set ylabel "g(r)"
 set title "Radial distribution function"
 
 set output "g_r.png"
 
-#plot "g_r.dat" using ($0*0.01 + 0.5*0.1):2 every step_size with lines title ""
-plot "g_r.dat" using ($1):(column(2)/y_max) with lines title "Normalized g(r)"
+plot "g_r.dat" using ($1):(column(2)/y_max) every step_size with lines title "Normalized g(r)"
