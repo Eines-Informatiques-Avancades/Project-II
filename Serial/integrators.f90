@@ -8,7 +8,7 @@ module integrators
 
 contains
     subroutine vv_integrator(positions, velocities, forces, cutoff, L, dt)
-        !!! --- Authors: Paula Sierra and Emma Valdés --- !!!
+        !!! --- Author: Emma Valdés --- !!!
         !
         !  Subroutine to update the positions of all particles using the Velocity Verlet
         ! algorithm = performs a single velocity verlet step
@@ -39,7 +39,7 @@ contains
     end subroutine vv_integrator
 
     subroutine main_loop(N_steps, N_save_pos, dt, L, sigma, nu, cutoff, positions, velocities)
-        !!! --- Authors: Paula Sierra and Emma Valdés --- !!!
+        !!! --- Author: Emma Valdés --- !!!
         implicit none
         integer, intent(in) :: N_steps, N_save_pos
         real*8, intent(in) :: dt, cutoff,L, sigma, nu
@@ -124,27 +124,25 @@ contains
 
     end subroutine boxmuller
 
-! ----------------------------------------------------------------------------
-! ANDERSEN THERMOSTAT
-! ----------------------------------------------------------------------------
     subroutine therm_Andersen(velocities,nu,sigma,N)
-    implicit none
-    integer :: i, j, N
-    real*8, intent(in) :: nu, sigma
-    real*8, allocatable, dimension(:,:), intent(inout) :: velocities 
-    real*8 :: x1, x2, xout1, xout2
-   
-    do i=1,N
-        call random_number(x1)
-        if (x1 < nu) then
-            do j=1,3
-                call random_number(x1)
-                call random_number(x2)
-                call boxmuller(sigma, x1, x2, xout1, xout2)
-                velocities(i,j)=xout1
-            enddo
-        endif
-    enddo
+        !!! --- Author: Paula Sierra --- !!!
+        implicit none
+        integer :: i, j, N
+        real*8, intent(in) :: nu, sigma
+        real*8, allocatable, dimension(:,:), intent(inout) :: velocities 
+        real*8 :: x1, x2, xout1, xout2
+       
+        do i=1,N
+            call random_number(x1)
+            if (x1 < nu) then
+                do j=1,3
+                    call random_number(x1)
+                    call random_number(x2)
+                    call boxmuller(sigma, x1, x2, xout1, xout2)
+                    velocities(i,j)=xout1
+                enddo
+            endif
+        enddo
     end subroutine therm_Andersen
 
 end module integrators
