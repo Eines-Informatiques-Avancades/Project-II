@@ -51,15 +51,16 @@ contains
     N = size(positions, dim=1)
     allocate(forces(N,3))
     ! open files
-    open(unit_dyn,file = 'dynamics.dat',status="REPLACE")
+    open(unit_dyn,file = 'dynamics.xyz',status="REPLACE")
     open(unit_ene,file = 'energies.dat',status="REPLACE")
     open(unit_tem,file = 'tempinst.dat',status="REPLACE")
     open(unit_pre,file = 'pressure.dat',status="REPLACE")
     open(unit_g_r,file='g_r.dat',status='REPLACE')
+    write(unit_dyn,*) N
+    write(unit_dyn,*) 0,"TIMESTEP:", 0
     do i=1,N
-        write(unit_dyn,'(3(f8.3,x))') positions(i,:)
+        write(unit_dyn,*) "Kr",positions(i,:)
     enddo
-    write(unit_dyn,'(A)') " "
     ! write initial positions and velocities at time=0
     allocate(g_r(1))
     do i=1,N_steps 
@@ -82,15 +83,15 @@ contains
         call calculate_g_r(positions, L, N, 0.1d0, g_r, 2.d0, 200)
 
         if (MOD(i,N_save_pos).EQ.0) then
+            write(unit_dyn,*) N
+            write(unit_dyn,*) time,"TIMESTEP:", i/100
             do j=1,N 
-                write(unit_dyn,'(3(e12.3,x))') positions(j,:)
+                write(unit_dyn,*) "Kr",positions(j,:)
             enddo 
-            write(unit_dyn,'(A)') " "
             write(unit_ene,'(4(e12.3,x))') time, KineticEn, PotentialEn, TotalEn
             write(unit_tem,'(2(e12.3,x))') time, Tinst
             write(unit_pre,'(2(e12.3,x))') time, press
             write(unit_g_r,'(2(e12.3,x))') time, g_r(1)
-
         endif
 
     enddo
