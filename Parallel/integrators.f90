@@ -10,7 +10,7 @@ module integrators
     public :: vv_integrator1,vv_integrator2, boxmuller, therm_Andersen
 contains
     subroutine vv_integrator1(imin,imax,positions, velocities, vlist,nnlist, cutoff, L, dt)
-        !!! --- Authors: Emma Valdés and Paula Sierra --- !!!
+        !!! --- Authors: Emma Valdés --- !!!
         !
         !  Subroutine to update the positions of each worker's assigned particles using the first step 
         !  of the Velocity Verlet integrator.
@@ -48,7 +48,7 @@ contains
     end subroutine vv_integrator1
 
     subroutine vv_integrator2(imin,imax,positions, velocities, vlist,nnlist, cutoff, L, dt)
-        !!! --- Authors: Emma Valdés and Paula Sierra --- !!!
+        !!! --- Authors: Emma Valdés --- !!!
         !  Subroutine to update the positions of each worker's assigned particles using the second step 
         !  of the Velocity Verlet integrator.
 
@@ -63,8 +63,8 @@ contains
     end subroutine vv_integrator2
 
     subroutine main_loop(comm,ierror,iproc,N_steps, N_save_pos, dt, L, sigma, nu, nproc, cutoff, vcutoff, positions, velocities)
-        !!! --- Authors: Emma Valdés and Paula Sierra --- !!!
-        !!! --- Contributors: Guillem Arasa and Quim Badosa --- !!!
+    !!! --- Authors: Emma Valdés and Paula Sierra --- !!!
+    !!! --- Contributors: Quim Badosa and Guillem Arasa --- !!!
     implicit none
     integer, intent(inout) :: ierror
     integer, intent(in) ::  comm,N_steps, N_save_pos,iproc,nproc
@@ -146,7 +146,7 @@ contains
         call vv_integrator2(imin,imax,positions,velocities,vlist,nnlist,cutoff,L,dt)
         ! Andersen thermostat modifies some velocities
         call therm_Andersen(imin,imax,velocities,nu,sigma,Nsub)
-      
+  
         ! compute kinetic, potential and total energies
         call kineticE(imin, imax, velocities,local_kineticEn)
         call potentialE(positions, vlist, nnlist, imin, imax,cutoff,local_PotentialEn, boxsize=L)
@@ -156,7 +156,23 @@ contains
                         ierror)
         call MPI_REDUCE(local_potentialEn, potentialEn, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, comm, &
         ierror)
-        
+
+        if (iproc==0) then
+            TotalEn=KineticEn+PotentialEn
+            ! compute Instantaneous temperature
+            call Tempinst(KineticEn,N,Tinst)
+		endif
+        ! communicate Tinst to the other workers so they can compute their partial pressure
+        call MPI_Bcast(Tinst,     1, MPI_DOUBLE_PRECISION, 0, comm, ierror)
+
+
+	    ! compute pressure
+        call MPI_BARRIER(comm, ierror)
+        call Pressure(vlist,nnlist,imin,imax,positions,L,cutoff,max_dist,Virialterm)
+        call MPI_BARRIER(comm, ierror)
+        call MPI_Reduce(Virialterm, global_Virialterm, 1,& 
+            MPI_DOUBLE_PRECISION, MPI_SUM, 0, comm, ierror)
+
         if (iproc==0) then
              call calculate_g_r(positions, L, N, 0.1d0, g_r, 2.d0, 200)
         endif
@@ -180,20 +196,19 @@ contains
                 write(unit_pre,'(2(e12.3,x))') time, press
                 write(unit_g_r,'(2(e12.3,x))') time, g_r(1)
             endif
-            ! check if Verlet lists need to be updated
-            if (MOD(i, n_update).EQ.0) then
-                call MPI_BARRIER(comm, ierror)
-                call MPI_Reduce(max_dist,global_max_dist,1,&
-                    MPI_DOUBLE_PRECISION,MPI_MAX, 0, comm, ierror)
-                call MPI_Bcast(global_max_dist, 1, MPI_DOUBLE_PRECISION, 0, comm, ierror)
-    
-                if (global_max_dist  > vcf2) then
-                    call verletlist(imin,imax,N,positions,vcutoff,nnlist,vlist)
-                endif
+        endif
+        ! check if Verlet lists need to be updated
+        if (MOD(i, n_update).EQ.0) then
+            call MPI_BARRIER(comm, ierror)
+            call MPI_Reduce(max_dist,global_max_dist,1,&
+                MPI_DOUBLE_PRECISION,MPI_MAX, 0, comm, ierror)
+            call MPI_Bcast(global_max_dist, 1, MPI_DOUBLE_PRECISION, 0, comm, ierror)
+
+            if (global_max_dist  > vcf2) then
+                call verletlist(imin,imax,N,positions,vcutoff,nnlist,vlist)
             endif
         endif
     enddo
-    
     if (iproc==0) then
         close(unit_dyn)
         close(unit_ene)
@@ -206,9 +221,7 @@ contains
     end subroutine main_loop
 
     subroutine boxmuller(sigma, x1, x2, xout1, xout2)
-        !!! --- Authors: Paula Sierra --- !!!
-        !!! --- Contributor: Rocío Aragoneses --- !!!
-
+        !!! --- Authors: Rocío Aragoneses and Paula Sierra --- !!!
         implicit none
         real*8 :: pi, sigma, x1, x2, xout1, xout2
         pi = 4d0*datan(1d0)
@@ -239,4 +252,3 @@ contains
         enddo
     end subroutine therm_Andersen
 end module integrators
-
