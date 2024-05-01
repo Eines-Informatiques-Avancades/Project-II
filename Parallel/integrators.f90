@@ -113,18 +113,20 @@ contains
     call MPI_BARRIER(comm,ierror)
     ! Build Verlet lists
     call verletlist(imin,imax,N,positions,vcutoff,nnlist,vlist)
+    
     ! allocate(g_r(1))
-    call MPI_ALLGATHER(Nsub, 1, MPI_INTEGER, gather_counts, 1, MPI_INTEGER, comm, ierror)
-    ! Calculate displacements for gather operation 
-    ! (tells program where to start writing the positions from each worker)
-    ! first processor writes first particle, etc
-    gather_displs(1) = 0
-    do j = 2, nproc
-        gather_displs(j) = gather_displs(j - 1) + gather_counts(j - 1)
-    end do
     do i=1,N_steps
         time = i*dt
-        
+        call MPI_ALLGATHER(Nsub, 1, MPI_INTEGER, gather_counts, 1, MPI_INTEGER, comm, ierror)
+        ! Calculate displacements for gather operation 
+        ! (tells program where to start writing the positions from each worker)
+        ! first processor writes first particle, etc
+        gather_displs(1) = 0
+        do j = 2, nproc
+            gather_displs(j) = gather_displs(j - 1) + gather_counts(j - 1)
+        end do
+        call MPI_BARRIER(comm,ierror)
+
         ! First step of Verlet integration
         call vv_integrator1(imin,imax,positions,velocities,vlist,nnlist,cutoff,L,dt)
         ! Perform MPI_ALLGATHERV to update positions from all processes
@@ -156,8 +158,13 @@ contains
 		endif
         ! communicate Tinst to the other workers so they can compute their partial pressure
         call MPI_Bcast(Tinst,     1, MPI_DOUBLE_PRECISION, 0, comm, ierror)
-        
-	    ! compute pressure
+
+
+        !!!!! --------------------- NEW ---------------------------------------------
+        !!  -------------------------------------------------------------------------
+	! compute pressure
+        call MPI_BARRIER(comm, ierror)
+
         call Pressure(vlist,nnlist,imin,imax,positions,L,cutoff,max_dist,Virialterm)
         call MPI_BARRIER(comm, ierror)
         call MPI_Reduce(Virialterm, global_Virialterm, 1,& 
