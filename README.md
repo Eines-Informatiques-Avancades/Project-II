@@ -26,7 +26,8 @@
 
 ## Introduction
 
-This project consists on a simple molecular dynamics program to simulate a Van der Waals gas of particles. It allows to obtain results indicating the evolution of the energy (kinetic, potential, total), temperature and pressure.
+This project consists on a simple molecular dynamics program to simulate a Van der Waals gas of particles. It allows to obtain results indicating the evolution of the energy (kinetic, potential, total), temperature, pressure and radial distribution function.
+
 
 ## Description
 
@@ -37,45 +38,77 @@ The different modules that can be found in this Repo are:
 * **Forces:** Method that calculates the van der Waals forces at each particle.
 * **Integrators:** Method to integrate Newton’s equations. 
 * **Statistics:** Method to determine all averaged values of selected variables during simulation trajectory and showing its final values at the end of the trajectory.
-* **Visualization of results:** post-processing method that will deal with obtained data from a given trajectory and will allow to show evolution of the energy, temperature and pressure of the system.
+* **Visualization of results:** post-processing method that will deal with obtained data from a given trajectory and will allow to show evolution of the energy, temperature, pressure and radial distribution of the system.
 
 ## Getting Started
 
 ### Dependencies
 
-- Fortran
+- Fortran (Recommended gfortran)
+- OpenMPI (Version 3.1.3_ics-2015.0 or newer)
 - Gnuplot
 
-### Installing
+### Installing and Preparation
 
-1. Download the folder Serial code. During all the execution, make sure the files with extension `.f90`, `.gn` and the `Makefile` remain in the same directory.
+1. Clone this repository or download raw `.zip` file in your local directory. For both Serial or Parallel execution, make sure the files remain in the original directory.
+
 2. Modify the compilator, optimizator and flag variables in `Makefile` to your preference.
 
-   **_Note:_** _The default compilator and optimizator are `gfortran` and `-O3`._
+   **_Note:_** _The default compilator and optimizator are `gfortran` and `-O3` for **Serial**._
+
+   **_Note:_** _The default compilator, executer and optimizator are `mpif90`, `mpirun` and `-O2` for **Parallel**. The default number of processors is `4`_.
    
 3. Modify the parameters of your simulation in `parameters.nml`.
 
-   **_Note:_** _The default parameters relate to a system of Kr gas at 300K._
+   **_Note:_** _The default parameters relate to a system of the noble gas Kr at 300K_ (Rutkai, G. et al, 2016. doi: 10.1080/00268976.2016.1246760).
 
-### Executing program
+### Executing program in Serial:
 
 1. Run the `Makefile` script.
 ```
 make -f Makefile
 ```
-2. Execute the output program by running
+2. Execute the output program by running:
 ```
 make run
 ```
-This also generates the final output plots. Alternatively, you can run the program with `./a.out`, and generate your plots writing `gnuplot visualization.gn`.
+This also generates the final output plots and data in a `results/` folder. Alternatively, you can run the program with `./a.out`, and generate your plots writing `gnuplot visualization.gn`.
+
+### Executing program in Parallel:
+
+1. Run the `Makefile` script.
+```
+make -f Makefile
+```
+2. **For local execution:** Execute the output program by running:
+```
+make run
+```
+This also generates the final output plots and data in a `results/` folder. Alternatively, you can run the program with `MD.exe`, and generate your plots writing `gnuplot visualization.gn`.
+
+3. **For cluster execution:** Execute the output program by running:
+```
+make qsub4 # for execution in iqtc04.q
+make qsub7 # for execution in iqtc07.q
+```
+
+> Before the execution, make sure you change the environment of your cluster in `openmpi.sub` by choosing the modules required.
+
+
+This also generates the final output plots and data in a `HELLO/` folder. A `hello.log`, `hello.out` and `hello.err`. Alternatively, you can run the program with `MD.exe`, and generate your plots writing `gnuplot visualization.gn`.
 
 ## Help
 
-* The `Makefile` script has a help menu that can be accessed running the following command:
+The `Makefile` script has a help menu that can be accessed running the following command:
 ```
 make help
 ```
-* The folder `Results` contains an example of the results obtained for a system of Kr gas at 300K. Remember that you can adjust the parameters to your simulation modifying the file `parameters.nml`.
+The folder `Results` contains an example of the results obtained for a system of Kr gas at 300K. Remember that you can adjust the parameters to your simulation modifying the file `parameters.nml`.
+
+* Values of Energy, Pressure, Instant Temperature, Radial Distribution in `.dat` format.
+* Plots of Energy, Pressure, Instant Temperature, Radial Distribution in `.png` format.
+* Trajectory file of the particles for VMD analysis in `.xyz` format.
+
   
 ## Authors
 
