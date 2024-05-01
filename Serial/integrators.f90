@@ -44,10 +44,10 @@ contains
     real*8, allocatable, dimension(:,:), intent(inout) :: positions, velocities 
     real*8, allocatable, dimension(:,:) :: forces
     real*8 :: KineticEn, PotentialEn, TotalEn, Tinst, press
-    integer :: N, i, j,unit_dyn=10,unit_ene=11,unit_tem=12,unit_pre=13
+    integer :: N, i, j,unit_dyn=10,unit_ene=11,unit_tem=12,unit_pre=13,unit_g_r=14
     real*8 :: time
     double precision, dimension(:), allocatable :: g_r
-    integer :: n_bins !, max_r
+
     N = size(positions, dim=1)
     allocate(forces(N,3))
     ! open files
@@ -55,7 +55,7 @@ contains
     open(unit_ene,file = 'energies.dat',status="REPLACE")
     open(unit_tem,file = 'tempinst.dat',status="REPLACE")
     open(unit_pre,file = 'pressure.dat',status="REPLACE")
-    open(20, file='g_r.dat')
+    open(unit_g_r,file='g_r.dat',status='REPLACE')
     do i=1,N
         write(unit_dyn,'(3(f8.3,x))') positions(i,:)
     enddo
@@ -78,8 +78,8 @@ contains
         call Pressure (positions,L,cutoff,Tinst,press)
         ! write variables to output - positions, energies
 
-        ! call calculate_g_r(positions, L, N, 100.d0, g_r, N_save_pos, n_bins)
-        call calculate_g_r(positions, L, N, 1.d0, g_r, 1.d0, 1)
+        ! call calculate_g_r(positions, L, N, d_r, g_r, max_r, n_bins)
+        call calculate_g_r(positions, L, N, 0.1d0, g_r, 2.d0, 200)
 
         if (MOD(i,N_save_pos).EQ.0) then
             do j=1,N 
@@ -89,9 +89,8 @@ contains
             write(unit_ene,'(4(e12.3,x))') time, KineticEn, PotentialEn, TotalEn
             write(unit_tem,'(2(e12.3,x))') time, Tinst
             write(unit_pre,'(2(e12.3,x))') time, press
-            open(20, file='g_r.dat')
-                write(20,*) g_r
-            close(20)
+            write(unit_g_r,'(2(e12.3,x))') time, g_r(1)
+
         endif
 
     enddo
@@ -101,6 +100,7 @@ contains
     close(unit_ene)
     close(unit_tem)
     close(unit_pre)
+    close(unit_g_r)
 
     open(5, file='final_positions.dat')
     do i = 1, N
@@ -111,13 +111,13 @@ contains
     end subroutine main_loop
 
     subroutine boxmuller(sigma, x1, x2, xout1, xout2)
-    implicit none
-    real*8 :: pi, sigma, x1, x2, xout1, xout2
-    pi = 4d0*datan(1d0)
-   
-    xout1=sigma*dsqrt(-2d0*(dlog(1d0-x1)))*dcos(2d0*pi*x2)
-    xout2=sigma*dsqrt(-2d0*(dlog(1d0-x1)))*dsin(2d0*pi*x2)
-   
+        implicit none
+        real*8 :: pi, sigma, x1, x2, xout1, xout2
+        pi = 4d0*datan(1d0)
+
+        xout1=sigma*dsqrt(-2d0*(dlog(1d0-x1)))*dcos(2d0*pi*x2)
+        xout2=sigma*dsqrt(-2d0*(dlog(1d0-x1)))*dsin(2d0*pi*x2)
+
     end subroutine boxmuller
 
 ! ----------------------------------------------------------------------------
