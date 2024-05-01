@@ -74,13 +74,12 @@ contains
     subsystems(nproc,2),Nsub, n_update=10
     integer, allocatable, dimension(:) :: gather_counts, gather_displs, nnlist, vlist
     real*8 :: time, max_dist,local_kineticEn,local_potentialEn, global_max_dist
-    !----------------- NEW-------------------------------------
-    real*8 :: volume, Virialterm, global_Virialterm, ierr
+    real*8 :: volume, Virialterm, global_Virialterm
     volume=L**3.0 
     
     vcf2 = vcutoff*vcutoff
     kineticEn=0.d0
-
+    potentialEn=0.d0
     N = size(positions, dim=1)
     ! allocation, open files
     ! write initial positions and velocities at time=0
@@ -99,34 +98,33 @@ contains
         write(unit_dyn,'(A)') " "
     endif
 
-    ! Enter nproc as a parameter
+    ! Divide system in subsystems
     call assign_subsystem(nproc,N,subsystems)
-    ! iproc goes from 0 to nproc-1, indices go from 1 to nproc
-    imin=subsystems(iproc+1,1) 
-    imax=subsystems(iproc+1,2)
+    imin = subsystems(iproc+1,1)
+    imax = subsystems(iproc+1,2)
     Nsub = imax-imin+1
-    ! allocate parallel related structures needed for MPI_ALLGATHERV
-    ! and also for the calculation of forces
     allocate(gather_counts(nproc),gather_displs(nproc), nnlist(Nsub), vlist(Nsub*Nsub))
 
+    ! Quantities needed to share information between processes
+    gather_counts = Nsub
     call MPI_BARRIER(comm,ierror)
+    call MPI_Allgather(gather_counts(iproc+1), 1, MPI_INTEGER, gather_counts, 1, MPI_INTEGER, comm, ierror)
+  
+    gather_displs(1) = 0
+    do i = 2, nproc
+       gather_displs(i) = gather_displs(i-1) + gather_counts(i-1)
+    end do
+
     ! Build Verlet lists
     call verletlist(imin,imax,N,positions,vcutoff,nnlist,vlist)
-    call MPI_ALLGATHER(Nsub, 1, MPI_INTEGER, gather_counts, 1, MPI_INTEGER, comm, ierror)
-    ! Calculate displacements for gather operation 
-    ! (tells program where to start writing the positions from each worker)
-    ! first processor writes first particle, etc
-    gather_displs(1) = 0
-    do j = 2, nproc
-        gather_displs(j) = gather_displs(j - 1) + gather_counts(j - 1)
-    end do
+    write(*,'(A,x,i2,3(x,A,x,i5),A)') 'Worker',iproc,'has',Nsub,'particles:',imin,'to',imax,'.'
+    call MPI_BARRIER(comm,ierror)
     do i=1,N_steps
         time = i*dt
-        
         ! First step of Verlet integration
         call vv_integrator1(imin,imax,positions,velocities,vlist,nnlist,cutoff,L,dt)
         ! Perform MPI_ALLGATHERV to update positions from all processes
-        
+  
         call MPI_BARRIER(comm,ierror)
         do j=1,3
             call MPI_ALLGATHERV(positions(imin:imax, j), Nsub, MPI_DOUBLE_PRECISION, &
@@ -136,8 +134,9 @@ contains
         
         ! Second step of Verlet integration, recalculates actual forces
         call vv_integrator2(imin,imax,positions,velocities,vlist,nnlist,cutoff,L,dt)
+        ! Andersen thermostat modifies some velocities
         call therm_Andersen(imin,imax,velocities,nu,sigma,Nsub)
-        ! -----------------------------------------------------------
+  
         ! compute kinetic, potential and total energies
         call kineticE(imin, imax, velocities,local_kineticEn)
         call potentialE(positions, vlist, nnlist, imin, imax,cutoff,local_PotentialEn, boxsize=L)
@@ -147,6 +146,7 @@ contains
                         ierror)
         call MPI_REDUCE(local_potentialEn, potentialEn, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, comm, &
         ierror)
+
         if (iproc==0) then
             TotalEn=KineticEn+PotentialEn
             ! compute Instantaneous temperature
@@ -154,7 +154,7 @@ contains
 		endif
         ! communicate Tinst to the other workers so they can compute their partial pressure
         call MPI_Bcast(Tinst,     1, MPI_DOUBLE_PRECISION, 0, comm, ierror)
-        
+
 	    ! compute pressure
         call Pressure(vlist,nnlist,imin,imax,positions,L,cutoff,max_dist,Virialterm)
         call MPI_BARRIER(comm, ierror)
