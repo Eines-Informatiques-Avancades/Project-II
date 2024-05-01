@@ -40,7 +40,7 @@ contains
 
         N = size(positions,dim=1)
         ! forces will require the verlet lists
-        call VDW_forces(positions, vlist, nnlist, imin, imax, cutoff, forces)
+        call VDW_forces(positions, vlist, nnlist, imin, imax, cutoff, forces, L)
         positions(imin:imax,:) = positions(imin:imax,:) + (dt*velocities(imin:imax,:)) + (0.5d0*dt*dt*forces(imin:imax,:))
         call PBC(imin, imax, positions, L,N)
         velocities(imin:imax,:) = velocities(imin:imax,:) + (0.5d0*dt*forces(imin:imax,:))
@@ -57,7 +57,7 @@ contains
         real*8, intent(in)                                 :: cutoff, L, dt
         real*8, dimension(size(positions, dim=1),3) :: forces
 
-        call VDW_forces(positions, vlist, nnlist, imin, imax, cutoff, forces)
+        call VDW_forces(positions, vlist, nnlist, imin, imax, cutoff, forces, L)
         velocities(imin:imax,:) = velocities(imin:imax,:) + 0.5d0*dt*forces(imin:imax,:)
     end subroutine vv_integrator2
 
@@ -71,7 +71,7 @@ contains
     real*8 :: KineticEn, PotentialEn, TotalEn, Tinst, press, vcf2
 
     integer :: unit_dyn=10,unit_ene=11,unit_tem=12,unit_pre=13,unit_g_r=14
-    integer :: imin,imax,subsystems(nproc,2),Nsub,N, i, j
+    integer :: imin,imax,subsystems(nproc,2),Nsub,N, i, j, n_update=10
     integer, allocatable, dimension(:) :: gather_counts, gather_displs, nnlist, vlist
     real*8 :: time, max_dist,local_kineticEn,local_potentialEn, global_max_dist
     real*8 :: volume, Virialterm, global_Virialterm
