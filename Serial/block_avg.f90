@@ -1,6 +1,6 @@
 module block_average_module
     implicit none
-
+    public :: block_average, read_data_from_file, write_results, compute_and_save_block_averages
 contains
 
     subroutine block_average(array, num_data, block_size, total_mean, std_dev)
@@ -20,8 +20,8 @@ contains
             block_avg2 = 0.0
 
             do j = 1, block_size
-                block_avg = block_avg + array((i - 1) * block_size + j)
-                block_avg2 = block_avg2 + array((i - 1) * block_size + j)**2
+                block_avg = block_avg + array((i-1) * block_size + j)
+                block_avg2 = block_avg2 + array((i-1) * block_size + j)**2.d0
             end do
 
             block_avg = block_avg / block_size
@@ -68,15 +68,17 @@ contains
     end subroutine read_data_from_file
 
     subroutine write_results(output_file, total_mean, std_dev)
+        implicit none
         character(len=*), intent(in) :: output_file
         real*8, intent(in) :: total_mean, std_dev
 
-        open(unit=11, file=output_file, status='replace', action='write')
-        write(11, '(F10.5, 2X, F10.5)') total_mean, std_dev
-        close(11)
+        open(unit=20, file=output_file, status='replace', action='write')
+        write(20, '(F10.5, 2X, F10.5)') total_mean, std_dev
+        close(20)
     end subroutine write_results
 
     subroutine compute_and_save_block_averages(filename, block_size, column, output_file)
+        implicit none
         real*8, allocatable :: data(:)
         character(len=*), intent(in) :: filename, output_file
         integer, intent(in) :: block_size, column
