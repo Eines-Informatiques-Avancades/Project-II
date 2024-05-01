@@ -1,6 +1,6 @@
 # Compilator, el optimizator and flags variables
-FC = /home/psierrva26/.openmpi/bin/mpif90
-MC = /home/psierrva26/.openmpi/bin/mpirun
+FC = mpif90
+MC = mpirun
 NP = 4
 OPT = -O2
 #FLAGS
