@@ -105,10 +105,10 @@ make help
 ```
 An example of the results obtained for a system of Kr gas at 300K are presented below
 
-<a name="Energies" href="https://github.com/Eines-Informatiques-Avancades/Project-II/tree/master/Results"><img src="https://github.com/Eines-Informatiques-Avancades/Project-II/blob/master/Results/ResultsParallel/energy_plot.png?raw=true" alt="Energies" width="500"></a>
-<a name="Temperature" href="https://github.com/Eines-Informatiques-Avancades/Project-II/tree/master/Results"><img src="https://github.com/Eines-Informatiques-Avancades/Project-II/blob/master/Results/ResultsParallel/temp_plot.png?raw=true" alt="Temperature" width="500"></a>
-<a name="Pressure" href="https://github.com/Eines-Informatiques-Avancades/Project-II/tree/master/Results"><img src="https://github.com/Eines-Informatiques-Avancades/Project-II/blob/master/Results/ResultsParallel/pressure_plot.png?raw=true" alt="UPC" width="500"></a>
-<a name="g(r)" href="https://github.com/Eines-Informatiques-Avancades/Project-II/tree/master/Results"><img src="https://github.com/Eines-Informatiques-Avancades/Project-II/blob/master/Results/ResultsParallel/g_r.png?raw=true" alt="g(r)" width="500"></a>
+<a name="Energies" href="https://github.com/Eines-Informatiques-Avancades/Project-II/tree/master/Results"><img src="https://github.com/Eines-Informatiques-Avancades/Project-II/blob/master/Results/ResultsParallel/energy_plot.png?raw=true" alt="Energies" width="400"></a>
+<a name="Temperature" href="https://github.com/Eines-Informatiques-Avancades/Project-II/tree/master/Results"><img src="https://github.com/Eines-Informatiques-Avancades/Project-II/blob/master/Results/ResultsParallel/temp_plot.png?raw=true" alt="Temperature" width="400"></a>
+<a name="Pressure" href="https://github.com/Eines-Informatiques-Avancades/Project-II/tree/master/Results"><img src="https://github.com/Eines-Informatiques-Avancades/Project-II/blob/master/Results/ResultsParallel/pressure_plot.png?raw=true" alt="UPC" width="400"></a>
+<a name="g(r)" href="https://github.com/Eines-Informatiques-Avancades/Project-II/tree/master/Results"><img src="https://github.com/Eines-Informatiques-Avancades/Project-II/blob/master/Results/ResultsParallel/g_r.png?raw=true" alt="g(r)" width="400"></a>
 
 In addition, the folder `Results` contains more information about this example. Remember that you can adjust the parameters to your simulation modifying the file `parameters.nml`.
 
