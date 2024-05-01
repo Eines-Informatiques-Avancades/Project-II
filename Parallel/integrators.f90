@@ -70,9 +70,10 @@ contains
     real*8, allocatable :: forces(:,:)
 
     real*8 :: KineticEn, PotentialEn, TotalEn, Tinst, press, vcf2
-    integer :: N, i, j,unit_dyn=10,unit_ene=11,unit_tem=12,unit_pre=13,imin,imax,subsystems(nproc,2),Nsub
+    integer :: N, i, j,unit_dyn=10,unit_ene=11,unit_tem=12,unit_pre=13,imin,imax, & 
+    subsystems(nproc,2),Nsub, n_update=10
     integer, allocatable, dimension(:) :: gather_counts, gather_displs, nnlist, vlist
-    real*8 :: time, max_dist,local_kineticEn,global_max_dist
+    real*8 :: time, max_dist,local_kineticEn,local_potentialEn, global_max_dist
     !----------------- NEW-------------------------------------
     real*8 :: volume, Virialterm, global_Virialterm, ierr
     volume=L**3.0 
@@ -86,12 +87,14 @@ contains
     !allocate(forces(N,3))
 
     if (iproc==0) then
-        open(unit_dyn,file = 'dynamics.dat',status="REPLACE")
+        open(unit_dyn,file = 'dynamics.XYZ',status="REPLACE")
         open(unit_ene,file = 'energies.dat',status="REPLACE")
         open(unit_tem,file = 'tempinst.dat',status="REPLACE")
         open(unit_pre,file = 'pressure.dat',status="REPLACE")
+        write(unit_dyn,'(i4)') N
+        write(unit_dyn,'(A)') " "
         do i=1,N
-            write(unit_dyn,'(3(f8.3,x))') positions(i,:)
+            write(unit_dyn,'(A,x,3(f8.3,x))') 'A', positions(i,:)
         enddo
         write(unit_dyn,'(A)') " "
     endif
@@ -109,18 +112,16 @@ contains
     call MPI_BARRIER(comm,ierror)
     ! Build Verlet lists
     call verletlist(imin,imax,N,positions,vcutoff,nnlist,vlist)
-
+    call MPI_ALLGATHER(Nsub, 1, MPI_INTEGER, gather_counts, 1, MPI_INTEGER, comm, ierror)
+    ! Calculate displacements for gather operation 
+    ! (tells program where to start writing the positions from each worker)
+    ! first processor writes first particle, etc
+    gather_displs(1) = 0
+    do j = 2, nproc
+        gather_displs(j) = gather_displs(j - 1) + gather_counts(j - 1)
+    end do
     do i=1,N_steps
         time = i*dt
-        call MPI_ALLGATHER(Nsub, 1, MPI_INTEGER, gather_counts, 1, MPI_INTEGER, comm, ierror)
-        ! Calculate displacements for gather operation 
-        ! (tells program where to start writing the positions from each worker)
-        ! first processor writes first particle, etc
-        gather_displs(1) = 0
-        do j = 2, nproc
-            gather_displs(j) = gather_displs(j - 1) + gather_counts(j - 1)
-        end do
-        call MPI_BARRIER(comm,ierror)
         
         ! First step of Verlet integration
         call vv_integrator1(imin,imax,positions,velocities,vlist,nnlist,cutoff,L,dt)
@@ -132,33 +133,31 @@ contains
             positions(:,j), gather_counts, gather_displs, MPI_DOUBLE_PRECISION, &
             comm, ierror)
         enddo
-
+        
         ! Second step of Verlet integration, recalculates actual forces
         call vv_integrator2(imin,imax,positions,velocities,vlist,nnlist,cutoff,L,dt)
         call therm_Andersen(imin,imax,velocities,nu,sigma,Nsub)
         ! -----------------------------------------------------------
         ! compute kinetic, potential and total energies
         call kineticE(imin, imax, velocities,local_kineticEn)
+        call potentialE(positions, vlist, nnlist, imin, imax,cutoff,local_PotentialEn, boxsize=L)
         call MPI_BARRIER(comm,ierror)
         ! gets each local kinetic energy, sums it all into kineticEn, which is a variable that processor 0 keeps
         call MPI_REDUCE(local_kineticEn, kineticEn, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, comm, &
                         ierror)
+        call MPI_REDUCE(local_potentialEn, potentialEn, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, comm, &
+        ierror)
         if (iproc==0) then
-            call potentialE(positions,cutoff,PotentialEn, boxsize=L)
             TotalEn=KineticEn+PotentialEn
             ! compute Instantaneous temperature
             call Tempinst(KineticEn,N,Tinst)
-        !print*, 'Potential and total Energy computed'
 		endif
         ! communicate Tinst to the other workers so they can compute their partial pressure
         call MPI_Bcast(Tinst,     1, MPI_DOUBLE_PRECISION, 0, comm, ierror)
         
-        !!!!! --------------------- NEW ---------------------------------------------
-        !!  -------------------------------------------------------------------------
-	! compute pressure
-        call MPI_BARRIER(comm, ierror)
+	    ! compute pressure
         call Pressure(vlist,nnlist,imin,imax,positions,L,cutoff,max_dist,Virialterm)
-        
+        call MPI_BARRIER(comm, ierror)
         call MPI_Reduce(Virialterm, global_Virialterm, 1,& 
             MPI_DOUBLE_PRECISION, MPI_SUM, 0, comm, ierror)
 
@@ -171,7 +170,7 @@ contains
              
             if (MOD(i,N_save_pos).EQ.0) then
                 do j=1,N 
-                    write(unit_dyn,'(3(e12.3,x))') positions(j,:)
+                    write(unit_dyn,'(A,x,3(e12.3,x))') 'A', positions(j,:)
                 enddo 
                 write(unit_dyn,*) " "
                 write(unit_ene,'(4(e12.3,x))') time, KineticEn, PotentialEn, TotalEn
@@ -180,13 +179,15 @@ contains
             endif
         endif
         ! check if Verlet lists need to be updated
-        call MPI_BARRIER(comm, ierror)
-        call MPI_Reduce(max_dist,global_max_dist,1,&
-            MPI_DOUBLE_PRECISION,MPI_MAX, 0, comm, ierror)
-        call MPI_Bcast(global_max_dist, 1, MPI_DOUBLE_PRECISION, 0, comm, ierror)
+        if (MOD(i, n_update).EQ.0) then
+            call MPI_BARRIER(comm, ierror)
+            call MPI_Reduce(max_dist,global_max_dist,1,&
+                MPI_DOUBLE_PRECISION,MPI_MAX, 0, comm, ierror)
+            call MPI_Bcast(global_max_dist, 1, MPI_DOUBLE_PRECISION, 0, comm, ierror)
 
-        if (global_max_dist  > vcf2) then
-            call verletlist(imin,imax,N,positions,vcutoff,nnlist,vlist)
+            if (global_max_dist  > vcf2) then
+                call verletlist(imin,imax,N,positions,vcutoff,nnlist,vlist)
+            endif
         endif
     enddo
     if (iproc==0) then
@@ -195,7 +196,7 @@ contains
         close(unit_tem)
         close(unit_pre)
     endif
-    ! deallocate(forces)
+
     deallocate(nnlist, vlist, gather_counts, gather_displs)
     end subroutine main_loop
 
