@@ -197,6 +197,7 @@ contains
                          end if
                 end do
                 end do
+                potentialEn = 0.5*potentialEn
         end subroutine potentialE
         
 
