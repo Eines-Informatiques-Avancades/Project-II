@@ -25,13 +25,12 @@ contains
         Double precision, dimension(3) :: f_ij
         Double precision :: d_ij, volume, cf2
         integer, intent(in) :: vlist(:),nnlist(:), imin,imax
-        Integer ::  npart,i,j,jj,jmin,jmax,nneighbors
+        Integer ::  i,j,jj,jmin,jmax,nneighbors
         Double precision, intent(out) :: max_dist
                  
         Virialterm=0.d0
         !Volume and number of particles:
         volume= dble(boxsize*boxsize*boxsize)
-        npart= int(size(positions,dim=1))
         cf2 = cutoff*cutoff
         jmax=0        
         max_dist=0.0
@@ -75,7 +74,7 @@ contains
 
       !!!!!---------------------------------------------------------------------------------------------------------------------
 
-      subroutine VDW_forces (positions, vlist, nnlist, imin,imax, cutoff, VDW_force)
+      subroutine VDW_forces(positions, vlist, nnlist, imin,imax, cutoff, VDW_force)
               ! Subroutine that calculates the interaction between particles using the Lennard Jones potential
               ! The interacting range is limited by a cutoff distance.
               implicit none
@@ -87,7 +86,7 @@ contains
                    !VDW_force: Total interaction force                       
                 integer, intent(in) :: vlist(:),nnlist(:), imin,imax
                 Double precision, dimension(:,:), intent(in) :: positions
-                double precision, dimension(:,:), intent(inout) :: vdw_force
+                double precision, dimension(:,:), intent(out) :: vdw_force
                 Double precision, intent(in) :: cutoff
                 
                  !VARIABLES:
@@ -225,9 +224,6 @@ contains
                 Integer, intent(in) :: imin, imax
                 Double precision,allocatable, dimension(:,:),intent(in) :: velocities
                 Double precision, intent(out) :: KineticEn
-
-                 !VARIABLES:
-                    !npart: particle number. Integer
 
                 ! Double precision, dimension(3,1) :: v_ij
                 Double precision:: e_ij
