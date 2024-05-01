@@ -129,4 +129,7 @@ In addition, the folder `Results` contains more information about this example. 
 
 * 0.1
     * Initial Release
-
+* 0.1.1
+    * Thermal Bath & Radial distribution function Serial implementation
+* 0.2
+    * Parallel Release
