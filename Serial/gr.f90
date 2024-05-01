@@ -51,5 +51,6 @@ contains
             delta_r = (bin - 0.5) * dr
             g_r(bin) = g_r(bin) / (n_particles * (4.0/3.0 * pi * (delta_r**3 - (delta_r-dr)**3)))
         end do
+
     end subroutine calculate_g_r
 end module gr_module
