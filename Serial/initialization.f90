@@ -11,6 +11,7 @@ module initial_positions_module
 contains
 
     subroutine initial_positions(N, L, position)
+        !!! --- Author: Guillem Arasa --- !!!
         ! 
         ! This subroutine initializes the positions of the particles
         ! in a cubic lattice.
@@ -52,6 +53,7 @@ contains
     end subroutine initial_positions
 
     subroutine input_parameters(N, L, T)
+        !!! --- Author: Guillem Arasa --- !!!
         !
         ! This subroutine reads the input parameters from a file.
         ! 
@@ -93,6 +95,7 @@ contains
     end subroutine input_parameters
 
     subroutine initial_velocities(N, T, velocity)
+        !!! --- Author: Guillem Arasa --- !!!
         !
         ! This subroutine initializes the velocities of the particles
         ! using a Gaussian distribution.
@@ -129,6 +132,7 @@ contains
     end subroutine initial_velocities
 
     subroutine main
+        !!! --- Author: Guillem Arasa --- !!!
         !
         ! This subroutine is the main routine of the initializations.
         !

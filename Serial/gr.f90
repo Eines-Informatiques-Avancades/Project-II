@@ -7,6 +7,7 @@ module gr_module
 contains
 
     subroutine calculate_g_r(positions, L, n_particles, dr, g_r, max_r, n_bins)
+        !!! --- Author: Rocío Aragoneses --- !!!
         implicit none
         double precision, allocatable, dimension(:,:) :: positions
         double precision, intent(in) :: L, dr, max_r
@@ -44,5 +45,6 @@ contains
             delta_r = (bin - 0.5) * dr
             g_r(bin) = g_r(bin) / (n_particles * (4.0/3.0 * pi * (delta_r**3 - (delta_r-dr)**3)))
         end do
+
     end subroutine calculate_g_r
 end module gr_module

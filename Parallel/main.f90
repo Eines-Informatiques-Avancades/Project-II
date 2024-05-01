@@ -10,6 +10,8 @@ program main_simulation
     use block_average_module
     use gr_module
     !include 'mpif.h'
+    !!! --- Author: Paula Sierra and Emma Valdés --- !!!
+    !!! --- Contributors: Quim Badosa and Guillem Arasa --- !!!
     implicit none
     real*8, allocatable, dimension(:,:) :: positions,local_positions, all_positions, velocities 
     integer, allocatable, dimension(:) :: gather_counts, gather_displs

@@ -5,6 +5,7 @@ module verlet
 contains
 
     subroutine verletlist(imin,imax,N,positions,vcutoff,nnlist,vlist)
+        !!! --- Authors: Paula Sierra and Emma Valdés --- !!!
         implicit none
         integer, intent(in) :: imin, imax, N
         integer, intent(out) :: nnlist(:), vlist(:) !(# neighbors x part), (i_neighbor)
