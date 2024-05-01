@@ -7,6 +7,8 @@ program main_simulation
     use Forces_and_Energies
     use integrators
     use readers_mod
+    use block_average_module
+    use gr_module
     !include 'mpif.h'
     !!! --- Author: Paula Sierra and Emma Valdés --- !!!
     !!! --- Contributors: Quim Badosa and Guillem Arasa --- !!!
@@ -102,6 +104,17 @@ program main_simulation
 
     ! deallocates memory
     deallocate(velocities,local_positions,positions)
+
+    if (iproc==0) then
+        ! Note: Adjust block_size
+        call compute_and_save_block_averages('tempinst.dat', 1000, 2, 'temp_blockavg.dat')
+        call compute_and_save_block_averages('pressure.dat', 1000, 2, 'pressure_blockavg.dat')
+        call compute_and_save_block_averages('g_r.dat', 1000, 2, 'gr_blockavg.dat')
+        call compute_and_save_block_averages('energies.dat', 1000, 2, 'energykin_blockavg.dat')
+        call compute_and_save_block_averages('energies.dat', 1000, 3, 'energypot_blockavg.dat')
+        call compute_and_save_block_averages('energies.dat', 1000, 4, 'energytot_blockavg.dat')
+    endif
+
     write(*,'(A)') "END OF SIMULATION."
 
     call mpi_finalize(ierror)

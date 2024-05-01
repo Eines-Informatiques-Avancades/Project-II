@@ -33,9 +33,9 @@ program main_simulation
     deallocate(positions,velocities)
 
     ! Note: Adjust block_size
-    call compute_and_save_block_averages('temperature.dat', 1000, 2, 'temp_blockavg.dat')
+    call compute_and_save_block_averages('tempinst.dat', 1000, 2, 'temp_blockavg.dat')
     call compute_and_save_block_averages('pressure.dat', 1000, 2, 'pressure_blockavg.dat')
-    call compute_and_save_block_averages('gr.dat', 1000, 2, 'gr_blockavg.dat')
+    call compute_and_save_block_averages('g_r.dat', 1000, 2, 'gr_blockavg.dat')
     call compute_and_save_block_averages('energies.dat', 1000, 2, 'energykin_blockavg.dat')
     call compute_and_save_block_averages('energies.dat', 1000, 3, 'energypot_blockavg.dat')
     call compute_and_save_block_averages('energies.dat', 1000, 4, 'energytot_blockavg.dat')

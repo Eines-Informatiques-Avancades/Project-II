@@ -7,7 +7,7 @@ implicit none
 
 contains
     subroutine Pressure (vlist,nnlist,imin,imax,positions,boxsize,cutoff,max_dist,Virialterm)
-        !!! --- Author: Quim Badosa --- !!!
+        !!! --- Authors: Quim Badosa and Guillem Arasa --- !!!
 
         ! This function calculates the pressure done by a number of particles (given by the number of position elements) in a
         ! box of a certain size at a certain temperature. The cutoff is used to set an interacting range of the particles.
@@ -176,19 +176,19 @@ contains
                 call minimum_image(r_ij(1,1), boxsize)
                 call minimum_image(r_ij(2,1), boxsize)
                 call minimum_image(r_ij(3,1), boxsize)
-                    !THIS WAY WE MAKE SURE THAT r_ij is inside our box
-                    !Module of r_ij
-                    d_ij2=(r_ij(1,1)**2)+(r_ij(2,1)**2)+(r_ij(3,1)**2)
-                    !Now we compare this distance with the cutoff
-                    if (d_ij2 < cf2) then
-                        e_ij = - 4.d0*(1.d0/cutoff**12.d0 - 1.d0 /cutoff**6.d0)+ 4*(1.d0/d_ij2**6.d0-1.d0/d_ij2**3.d0)
-                        potentialEn = potentialEn + e_ij
+                !THIS WAY WE MAKE SURE THAT r_ij is inside our box
+                !Module of r_ij
+                d_ij2=(r_ij(1,1)**2)+(r_ij(2,1)**2)+(r_ij(3,1)**2)
+                !Now we compare this distance with the cutoff
+                if (d_ij2 < cf2) then
+                    e_ij = - 4.d0*(1.d0/cutoff**12.d0 - 1.d0 /cutoff**6.d0)+ 4*(1.d0/d_ij2**6.d0-1.d0/d_ij2**3.d0)
+                    potentialEn = potentialEn + e_ij
                 end if
             end do
         end do
+        potentialEn = 0.5*potentialEn
     end subroutine potentialE
-        
-
+      
     subroutine  kineticE (imin,imax,velocities,KineticEn)
         !!! --- Author: Quim Badosa --- !!!
         !!! --- Contributor: Paula Sierra --- !!!
