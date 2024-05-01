@@ -4,6 +4,7 @@ module integrators
     use verlet
     use Forces_and_Energies
     use initial_positions_module
+    use gr_module
     implicit none
 
     public :: vv_integrator1,vv_integrator2, boxmuller, therm_Andersen
@@ -69,6 +70,7 @@ contains
     real*8, allocatable, dimension(:,:), intent(inout) :: positions, velocities 
     real*8, allocatable :: forces(:,:)
     real*8 :: KineticEn, PotentialEn, TotalEn, Tinst, press, vcf2
+    double precision, dimension(:), allocatable :: g_r
 
     integer :: unit_dyn=10,unit_ene=11,unit_tem=12,unit_pre=13,unit_g_r=14
     integer :: imin,imax,subsystems(nproc,2),Nsub,N, i, j, n_update=10
@@ -91,6 +93,7 @@ contains
         open(unit_ene,file = 'energies.dat',status="REPLACE")
         open(unit_tem,file = 'tempinst.dat',status="REPLACE")
         open(unit_pre,file = 'pressure.dat',status="REPLACE")
+        open(unit_g_r,file='g_r.dat',status='REPLACE')
 
         ! open(unit_g_r,file='g_r.dat',status='REPLACE')
         write(unit_dyn,*) N
@@ -105,7 +108,7 @@ contains
     imin = subsystems(iproc+1,1)
     imax = subsystems(iproc+1,2)
     Nsub = imax-imin+1
-    allocate(gather_counts(nproc),gather_displs(nproc), nnlist(Nsub), vlist(Nsub*Nsub))
+    allocate(gather_counts(nproc),gather_displs(nproc), nnlist(Nsub), vlist(Nsub*Nsub),g_r(1))
 
     ! Quantities needed to share information between processes
     gather_counts = Nsub
@@ -168,9 +171,9 @@ contains
         call MPI_Reduce(Virialterm, global_Virialterm, 1,& 
             MPI_DOUBLE_PRECISION, MPI_SUM, 0, comm, ierror)
 
-        ! if (iproc==0) then
-        !     call calculate_g_r(positions, L, N, 0.1d0, g_r, 2.d0, 200)
-        ! endif
+        if (iproc==0) then
+             call calculate_g_r(positions, L, N, 0.1d0, g_r, 2.d0, 200)
+        endif
 
 
         ! write variables to output - positions, energies
@@ -189,7 +192,7 @@ contains
                 write(unit_ene,'(4(e12.3,x))') time, KineticEn, PotentialEn, TotalEn
                 write(unit_tem,'(2(e12.3,x))') time, Tinst
                 write(unit_pre,'(2(e12.3,x))') time, press
-                !write(unit_g_r,'(2(e12.3,x))') time, g_r(1)
+                write(unit_g_r,'(2(e12.3,x))') time, g_r(1)
             endif
         endif
         ! check if Verlet lists need to be updated
@@ -209,11 +212,10 @@ contains
         close(unit_ene)
         close(unit_tem)
         close(unit_pre)
-        !close(unit_g_r)
+        close(unit_g_r)
     endif
 
-    deallocate(nnlist, vlist, gather_counts, gather_displs)
-    !deallocate(g_r)
+    deallocate(nnlist, vlist, gather_counts, gather_displs,g_r)
     end subroutine main_loop
 
     subroutine boxmuller(sigma, x1, x2, xout1, xout2)
