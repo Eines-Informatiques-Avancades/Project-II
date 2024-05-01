@@ -6,13 +6,6 @@ module gr_module
 
 contains
 
-    ! interface
-    !     subroutine minimum_image(r, L)
-    !         double precision, intent(inout) :: r
-    !         double precision, intent(in) :: L
-    !     end subroutine minimum_image
-    ! end interface
-
     subroutine calculate_g_r(positions, L, n_particles, dr, g_r, max_r, n_bins)
         implicit none
         double precision, allocatable, dimension(:,:) :: positions
