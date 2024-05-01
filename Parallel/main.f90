@@ -9,15 +9,11 @@ program main_simulation
     use readers_mod
     !include 'mpif.h'
     implicit none
-    real*8, allocatable, dimension(:,:) :: positions, velocities 
+    real*8, allocatable, dimension(:,:) :: positions,local_positions, all_positions, velocities 
     integer, allocatable, dimension(:) :: gather_counts, gather_displs
+    real*8 :: L,temperature,dt,cutoff,vcutoff,epsilon,sigma,nu,wtime
     integer :: N,n_steps,n_save_pos,nproc,ierror,iproc,i,j,nsub
-    real*8 :: L,temperature,dt,cutoff,vcutoff,epsilon,sigma,nu
     character (len=500) :: simulation_name
-    real*8, allocatable, dimension(:,:) :: local_positions, all_positions!, positions
-    real*8 :: wtime
-
-
 
     call mpi_init(ierror)
     call mpi_comm_rank(MPI_COMM_WORLD,iproc,ierror)
@@ -61,72 +57,48 @@ program main_simulation
     allocate(local_positions(Nsub,3))
     allocate(positions(N,3))
     call MPI_BARRIER(MPI_COMM_WORLD, ierror)
-    gather_displs = (/0, 16, 32, 48/)
-    gather_counts = 16
 
-    if (N**(1.d0/3.d0) /= nproc) then
+    if (N /= nproc**3) then
+        print*, 'Initial positions in serial.'
         if (iproc == 0) then
            call initial_positions_serial(N, L, positions)
         endif
         call MPI_Bcast(positions, N*3, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierror)
     else
+        print*, 'Initial positions in parallel.'
         call initial_positions_parallel(N, L, local_positions, iproc)
-
         allocate(gather_counts(nproc), gather_displs(nproc))
         gather_counts = N/nproc
         gather_displs(1) = 0
         do i=2,nproc 
             gather_displs(i) = gather_displs(i-1)+gather_counts(i-1)
         enddo
-        print*, iproc,': ', gather_displs
-
-        print*, 'what is going on'
+    
         call MPI_BARRIER(MPI_COMM_WORLD, ierror)
-        if (N**(1.d0/3.d0) == nproc) then
-          do j=1,3
-            call MPI_ALLGATHERV(local_positions(:, j), gather_counts(iproc+1), MPI_DOUBLE_PRECISION, &
-                                positions(:,j), gather_counts, gather_displs, &
-                                MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, ierror)
-          enddo
-        endif
+        do j=1,3
+        call MPI_ALLGATHERV(local_positions(:, j), gather_counts(iproc+1), MPI_DOUBLE_PRECISION, &
+                            positions(:,j), gather_counts, gather_displs, &
+                            MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, ierror)
+        enddo
         call MPI_BARRIER(MPI_COMM_WORLD, ierror)
         deallocate(gather_counts,gather_displs)
     endif
 
-    if (iproc == 0) then
-        print*, 'Positions gathered.'
-        open(1, file='init_positions.dat', status='unknown')
-        do j=1,N
-            write(*,'(3(f5.2,x))') positions(j,:)
-        enddo
-        close(1)
-    endif
-
     if (iproc==0) then
-        ! call initial_positions(N, L, positions)
         call initial_velocities(N, temperature, velocities)
         print*, 'System initialized.'
     endif
     call MPI_Bcast(velocities,  N*3, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierror)
 
     ! simulation loop
-    call main_loop(MPI_COMM_WORLD,iproc,n_steps,n_save_pos, dt, L, sigma, nu, nproc, cutoff, vcutoff, positions, velocities)
-    ! deallocates memory
-
+    call main_loop(MPI_COMM_WORLD,ierror,iproc,n_steps,n_save_pos, dt, L, sigma, nu, nproc, cutoff, vcutoff, positions, velocities)
 
     if (iproc==0) then
         wtime = mpi_wtime() - wtime
         write(*,'(A,F10.2,A)') "Elapsed time: ", wtime, " seconds."
     endif
 
-    if (iproc == 0) then
-        open(1, file='final_positions.dat', status='unknown')
-        do j=1,N
-            write(1,'(3(f5.2,x))') positions(j,:)
-        enddo
-        close(1)
-    endif
-
+    ! deallocates memory
     deallocate(velocities,local_positions,positions)
     write(*,'(A)') "END OF SIMULATION."
 
