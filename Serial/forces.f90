@@ -1,87 +1,75 @@
 module Forces_and_Energies
 use pbc_mod 
 contains
-        subroutine Pressure (positions,boxsize,cutoff,temp,press)
-        !This function calculates the pressure done by a number of particles (given by the number of position elements) in a
-        !box of a certain size at a certain temperature. The cutoff is used to set an interacting range of the particles.
-        ! Pressure has to terms: Ideal gas contribution Term (thermal motion) and the virial contribution term (interaction
-        ! between particles). The second one is based on  the interaction between pairs of particles
-        ! (Lennard-Jones potential)
-
-        ! IdealGas contribution term : N*Kb*T/V
-        ! Virial contribution term : (1/3V)*sum(r_ij*f_ij)  
+    subroutine Pressure (positions,boxsize,cutoff,temp,press)
+    !This function calculates the pressure done by a number of particles (given by the number of position elements) in a
+    !box of a certain size at a certain temperature. The cutoff is used to set an interacting range of the particles.
+    ! Pressure has to terms: Ideal gas contribution Term (thermal motion) and the virial contribution term (interaction
+    ! between particles). The second one is based on  the interaction between pairs of particles
+    ! (Lennard-Jones potential)
+    ! IdealGas contribution term : N*Kb*T/V
+    ! Virial contribution term : (1/3V)*sum(r_ij*f_ij)  
        
-        implicit none
+    implicit none
 
-       !ARGUMENTS:
-       !Positions : Positions of the particles DIM= (d,npart)  (d usually=3)
-       !Boxsize: We will supose cubic system, double precision
-       !Cutoff: A range of interaction real double precision 
-       !Temperature: in Kelvin rea, double precision
-       ! Press: Result pressure, double precision
+    !ARGUMENTS:
+    !Positions : Positions of the particles DIM= (d,npart)  (d usually=3)
+    !Boxsize: We will supose cubic system, double precision
+    !Cutoff: A range of interaction real double precision 
+    !Temperature: in Kelvin rea, double precision
+    ! Press: Result pressure, double precision
 
-                Double precision,allocatable, dimension(:,:), intent(in) :: positions
-                Double precision, intent(in) :: cutoff,temp,boxsize
-                Double precision, intent(out) :: press
+    Double precision,allocatable, dimension(:,:), intent(in) :: positions
+    Double precision, intent(in) :: cutoff,temp,boxsize
+    Double precision, intent(out) :: press
                 
-        !VARIABLES:
-        !r_ij : relative position vector between pair of particles, double precision dim= (3,1)
-        !d_ij : distance module between the particles, double precision 
-        !f_ij: Force between the particles
-        !Virialterm : contribution for each pair, double precision
-        !Volume : boxsize**3.d0 (double precision)
-        !npart : Particles number, integer
-                
-                Double precision, dimension(3,1) :: r_ij
-                Double precision, dimension(3) :: f_ij
-                Double precision :: d_ij, volume, Virialterm, cf2
-                Integer ::  npart,i,j
+    !VARIABLES:
+    !r_ij : relative position vector between pair of particles, double precision dim= (3,1)
+    !d_ij : distance module between the particles, double precision 
+    !f_ij: Force between the particles
+    !Virialterm : contribution for each pair, double precision
+    !Volume : boxsize**3.d0 (double precision)
+    !npart : Particles number, integer
+    
+    Double precision, dimension(3,1) :: r_ij
+    Double precision, dimension(3) :: f_ij
+    Double precision :: d_ij, volume, Virialterm, cf2
+    Integer ::  npart,i,j
 
+    ! Initial values:
+    Press=0.d0
+    Virialterm=0.d0
+    !Volume and number of particles:
+    volume= dble(boxsize*boxsize*boxsize)
+    npart= int(size(positions,dim=1))
+    cf2 = cutoff*cutoff
+    !Force between particles:
+    do i=1,npart-1
+            do j=i+1,npart
+                    !Distance between particles:
+                    r_ij(1,1)=positions(i,1)-positions(j,1)
+                    r_ij(2,1)=positions(i,2)-positions(j,2)
+                    r_ij(3,1)=positions(i,3)-positions(j,3)
 
-                       
+    call minimum_image(r_ij(1,1), boxsize)
+    call minimum_image(r_ij(2,1), boxsize)
+    call minimum_image(r_ij(3,1), boxsize)
 
-        ! Initial values:
-        Press=0.d0
-        Virialterm=0.d0
-        !Volume and number of particles:
-        volume= dble(boxsize*boxsize*boxsize)
-        npart= int(size(positions,dim=1))
-        cf2 = cutoff*cutoff
-        !call PBC(positions, boxsize, npart)
-        !Force between particles:
-        do i=1,npart-1
-                do j=i+1,npart
-                        !Distance between particles:
-                        r_ij(1,1)=positions(i,1)-positions(j,1)
-                        r_ij(2,1)=positions(i,2)-positions(j,2)
-                        r_ij(3,1)=positions(i,3)-positions(j,3)
+    !Computes distance squared
+    d_ij=(r_ij(1,1)**2.d0)+(r_ij(2,1)**2.d0)+(r_ij(3,1)**2.d0)
+    !Now we compare this distance with the cutoff
 
-                        call minimum_image(r_ij(1,1), boxsize)
-                        call minimum_image(r_ij(2,1), boxsize)
-                        call minimum_image(r_ij(3,1), boxsize)
-
-
-                        !Computes distance squared
-                        d_ij=(r_ij(1,1)**2.d0)+(r_ij(2,1)**2.d0)+(r_ij(3,1)**2.d0)
-                        !Now we compare this distance with the cutoff
-
-                        if (d_ij< cf2) then
-                                 f_ij(1) = ((48.d0 / (d_ij**7)) -( 24.d0 / (d_ij**4))) * r_ij(1,1)
-                                 f_ij(2) = ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(2,1)
-                                 f_ij(3) = ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(3,1)
-
-                         !redefine virial Term value:
-                                Virialterm = Virialterm + dot_product(r_ij(:,1),f_ij)
-                         end if
-                   end do
-          end do
-          ! Paula: I added a ".d0" to the 10 because, if not added, is considered as integer and gives 0.
-          !press= (real(npart)*(1.38*10.d0**(-23))*temp)/volume + (1.d0/(3.d0*volume))*Virialterm
-          ! Pressure units are J/m³
-          ! we multiply ideal gas term *Kb=1.38*10**(-23)
-          press= (dble(npart)*temp)/volume + (1.d0/(3.d0*volume))*Virialterm
-          !Pressure in reduced units
-             
+                  if (d_ij< cf2) then
+                           f_ij(1) = ((48.d0 / (d_ij**7)) -( 24.d0 / (d_ij**4))) * r_ij(1,1)
+                           f_ij(2) = ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(2,1)
+                           f_ij(3) = ((48.d0 / (d_ij**7)) - (24.d0 / (d_ij**4))) * r_ij(3,1)
+                   !redefine virial Term value:
+                          Virialterm = Virialterm + dot_product(r_ij(:,1),f_ij)
+                   end if
+             end do
+    end do
+    press= (dble(npart)*temp)/volume + (1.d0/(3.d0*volume))*Virialterm
+     
       end subroutine Pressure
       
 
