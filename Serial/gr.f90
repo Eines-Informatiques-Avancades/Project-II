@@ -7,6 +7,7 @@ module gr_module
 contains
 
     subroutine calculate_g_r(positions, L, n_particles, dr, g_r, max_r, n_bins)
+        !!! --- Author: Rocío Aragoneses --- !!!
         implicit none
         double precision, allocatable, dimension(:,:) :: positions
         double precision, intent(in) :: L, dr, max_r

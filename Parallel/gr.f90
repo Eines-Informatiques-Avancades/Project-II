@@ -1,15 +1,9 @@
 module gr_module
     implicit none
-
 contains 
-    interface
-        subroutine minimum_image(r, L)
-            double precision, intent(inout) :: r
-            double precision, intent(in) :: L
-        end subroutine minimum_image
-    end interface
 
     subroutine calculate_g_r(positions, L, n_particles, dr, g_r, max_r, n_bins)
+        !!! --- Author: Rocío Aragoneses --- !!!
         implicit none
         double precision, allocatable, dimension(:,:) :: positions
         double precision, intent(in) :: L, dr, max_r
@@ -18,7 +12,6 @@ contains
         integer :: i, j, bin
         double precision :: r, delta_r
         double precision, parameter :: pi = 3.1415926535897932384626433832795
-
 
         ! Initialize g(r) array
         if (.not. allocated(g_r)) then

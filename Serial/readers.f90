@@ -4,6 +4,7 @@ contains
 
 subroutine read_parameters(param_file, dt, n_particles, n_steps, n_save_pos, L,&
     simulation_name, temperature,epsilon,cutoff,nu)
+    !!! --- Author: Emma Valdés --- !!!
     implicit none
     ! Subroutine to read the simulation parameters from a an nml list
     !

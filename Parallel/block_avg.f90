@@ -4,6 +4,7 @@ module block_average
     contains
 
     subroutine block_average(data, block_size, averages, variances, num_blocks)
+        !!! --- Authors: Rocío Aragoneses, Paula Sierra --- !!!
         implicit none
         ! Input data and parameters
         double precision, intent(in) :: data(:)        ! Array of data points to be averaged

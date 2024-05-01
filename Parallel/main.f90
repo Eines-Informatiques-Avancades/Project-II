@@ -8,6 +8,8 @@ program main_simulation
     use integrators
     use readers_mod
     !include 'mpif.h'
+    !!! --- Author: Paula Sierra and Emma Valdés --- !!!
+    !!! --- Contributors: Quim Badosa and Guillem Arasa --- !!!
     implicit none
     real*8, allocatable, dimension(:,:) :: positions,local_positions, all_positions, velocities 
     integer, allocatable, dimension(:) :: gather_counts, gather_displs

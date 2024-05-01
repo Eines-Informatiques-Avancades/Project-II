@@ -12,6 +12,7 @@ module initial_positions_module
 contains
 
     subroutine initial_positions_parallel(N, L, position, iproc)
+        !!! --- Author: Guillem Arasa --- !!!
         ! 
         ! This subroutine initializes the positions of the particles
         ! in a cubic lattice.
@@ -48,6 +49,7 @@ contains
     end subroutine initial_positions_parallel
 
     subroutine initial_positions_serial(N, L, position)
+        !!! --- Author: Guillem Arasa --- !!!
         ! 
         ! This subroutine initializes the positions of the particles
         ! in a cubic lattice.
@@ -83,6 +85,7 @@ contains
     end subroutine initial_positions_serial
 
     subroutine input_parameters(N, L, T)
+        !!! --- Author: Guillem Arasa --- !!!
         !
         ! This subroutine reads the input parameters from a file.
         ! 
@@ -124,6 +127,7 @@ contains
     end subroutine input_parameters
 
     subroutine initial_velocities(N, T, velocity)
+        !!! --- Author: Guillem Arasa --- !!!
         !
         ! This subroutine initializes the velocities of the particles
         ! using a Gaussian distribution.
@@ -160,13 +164,17 @@ contains
     end subroutine initial_velocities
 
     subroutine assign_subsystem(nproc,N,subsystems)
+        !!! --- Authors: Emma Valdés and Guillem Arasa --- !!!
+        ! 
         ! Subroutine assigns min and max particle labels assigned to each numbered processor.
         ! Processor with rank 0 will always have the least possible amount of particles.
+        ! 
         ! Arguments
-        ! nproc : number of processors used in the simulation run.
-        ! N : number of particles in the simulated system.
+        ! nproc     (integer, intent(in)): number of processors used in the simulation run.
+        ! N         (integer, intent(in)): number of particles in the simulated system.
+        
         ! Returns
-        ! subsystems([nproc,2]) : array with min and max labels (columns) for each processor (rows)
+        ! subsystems([nproc,2]): array with min and max labels (columns) for each processor (rows)
         integer, intent(in) :: nproc, N
         integer, intent(out) :: subsystems(nproc,2)
         integer :: i,j, Nsub(nproc), Nrest
@@ -174,7 +182,7 @@ contains
         Nsub = N/Nproc ! minimum number of particles in subsystem
         Nrest=mod(N,nproc) ! remainder
 
-        ! if N is not a multiple of nproc, the remaining particles are equally distributed among the 
+        ! If N is not a multiple of nproc, the remaining particles are equally distributed among the 
         ! processors starting with the highest rank, until there are no particles left
         if (nrest/=0) then
             do i = nproc-nrest+1, nproc
@@ -194,6 +202,7 @@ contains
     end subroutine
 
     subroutine main
+        !!! --- Author: Guillem Arasa --- !!!
         !
         ! This subroutine is the main routine of the initializations.
         !

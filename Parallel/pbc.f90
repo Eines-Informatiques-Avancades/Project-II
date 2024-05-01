@@ -5,6 +5,7 @@ module pbc_mod
 contains
 
     subroutine PBC(imin, imax, position, L, N)
+        !!! --- Author: Guillem Arasa --- !!!
         !
         ! This subroutine applies the periodic boundary conditions to the positions of the particles,
         ! so that the particles are always inside the box. The box is centered at the origin.
@@ -39,6 +40,7 @@ contains
     end subroutine PBC
 
     subroutine minimum_image(dx, L)
+        !!! --- Author: Guillem Arasa --- !!!
         !
         ! This subroutine calculates the minimum image convention for the distance between two particles.
         ! Args:
