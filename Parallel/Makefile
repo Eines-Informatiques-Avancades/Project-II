@@ -1,12 +1,12 @@
 # Compilator, el optimizator and flags variables
 FC = mpif90
 MC = mpirun
-NP = 5
+NP = 4
 OPT = -O2
 #FLAGS
 
 # List of source files .f90
-SRCS = initialization.f90 pbc.f90 verlet.f90 forces.f90 integrators.f90 readers.f90 main.f90
+SRCS = initialization.f90 pbc.f90 block_avg.f90 verlet.f90 forces.f90 gr.f90 integrators.f90 readers.f90 main.f90
 
 # List of object files .o
 OBJS = $(SRCS:.f90=.o)
