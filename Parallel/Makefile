@@ -30,7 +30,7 @@ run: $(EXE)
 	mkdir -p results
 	$(MC) -np $(NP) ./$(EXE)
 	gnuplot visualization.gn
-	mv *.dat *.png ./results
+	mv *.dat *.png *.xyz ./results
 
 # Delete files .o, .mod and .out
 clean:
