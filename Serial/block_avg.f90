@@ -39,7 +39,7 @@ contains
     end subroutine block_average
 
     subroutine read_data_from_file(filename, data, num_data, column)
-        !!! --- Author: Paula Sierra --- !!!
+        !!! --- Author: Rocío Aragoneses --- !!!
         implicit none
         character(len=*), intent(in) :: filename
         integer, intent(in) :: column
@@ -71,7 +71,7 @@ contains
     end subroutine read_data_from_file
 
     subroutine write_results(output_file, total_mean, std_dev)
-        !!! --- Author: Paula Sierra --- !!!
+        !!! --- Author: Rocío Aragoneses --- !!!
         character(len=*), intent(in) :: output_file
         real*8, intent(in) :: total_mean, std_dev
 
@@ -81,7 +81,7 @@ contains
     end subroutine write_results
 
     subroutine compute_and_save_block_averages(filename, block_size, column, output_file)
-        !!! --- Author: Paula Sierra --- !!!
+        !!! --- Author: Rocío Aragoneses --- !!!
         real*8, allocatable :: data(:)
         character(len=*), intent(in) :: filename, output_file
         integer, intent(in) :: block_size, column
