@@ -8,7 +8,7 @@ module integrators
 
     public :: vv_integrator1,vv_integrator2, boxmuller, therm_Andersen
 contains
-    subroutine vv_integrator1(imin,imax,positions, velocities, forces, vlist,nnlist, cutoff, L, dt)
+    subroutine vv_integrator1(imin,imax,positions, velocities, vlist,nnlist, cutoff, L, dt)
 
         !
         !  Subroutine to update the positions of each worker's assigned particles using the first step 
@@ -25,7 +25,6 @@ contains
         !   cutoff              : cutoff value of the VdW interaction.
         !   L                   : length of the sides of the box.
         !   dt                  : value of the integration timestep.
-        !   max_dist            :
         
         ! Returns:
         !    positions  (REAL64[3,N]) : positions of all N particles, in reduced units.
@@ -34,8 +33,9 @@ contains
         implicit none
         
         integer, intent(in) :: imin, imax, vlist(:), nnlist(:)
-        real*8, dimension(:,:), intent(inout) :: positions, velocities, forces
+        real*8, dimension(:,:), intent(inout) :: positions, velocities
         real*8, intent(in)                                 :: cutoff, L, dt
+        real*8, dimension(size(positions,dim=1),3) :: forces
         integer :: N
 
         N = size(positions,dim=1)
@@ -46,16 +46,16 @@ contains
         velocities(imin:imax,:) = velocities(imin:imax,:) + (0.5d0*dt*forces(imin:imax,:))
     end subroutine vv_integrator1
 
-    subroutine vv_integrator2(imin,imax,positions, velocities, forces, vlist,nnlist, cutoff, L, dt)
+    subroutine vv_integrator2(imin,imax,positions, velocities, vlist,nnlist, cutoff, L, dt)
         !
         !  Subroutine to update the positions of each worker's assigned particles using the second step 
         !  of the Velocity Verlet integrator.
 
         implicit none
         integer, intent(in) :: imin, imax, vlist(:), nnlist(:)
-        real*8, dimension(:,:), intent(inout) :: positions, velocities, forces
+        real*8, dimension(:,:), intent(inout) :: positions, velocities
         real*8, intent(in)                                 :: cutoff, L, dt
-
+        real*8, dimension(size(positions, dim=1),3) :: forces
 
         call VDW_forces(positions, vlist, nnlist, imin, imax, cutoff, forces)
         velocities(imin:imax,:) = velocities(imin:imax,:) + 0.5d0*dt*forces(imin:imax,:)
@@ -83,7 +83,7 @@ contains
     N = size(positions, dim=1)
     ! allocation, open files
     ! write initial positions and velocities at time=0
-    allocate(forces(N,3))
+    !allocate(forces(N,3))
 
     if (iproc==0) then
         open(unit_dyn,file = 'dynamics.dat',status="REPLACE")
@@ -123,7 +123,7 @@ contains
         call MPI_BARRIER(comm,ierror)
         
         ! First step of Verlet integration
-        call vv_integrator1(imin,imax,positions,velocities,forces,vlist,nnlist,cutoff,L,dt)
+        call vv_integrator1(imin,imax,positions,velocities,vlist,nnlist,cutoff,L,dt)
         ! Perform MPI_ALLGATHERV to update positions from all processes
         
         call MPI_BARRIER(comm,ierror)
@@ -134,7 +134,7 @@ contains
         enddo
 
         ! Second step of Verlet integration, recalculates actual forces
-        call vv_integrator2(imin,imax,positions,velocities,forces,vlist,nnlist,cutoff,L,dt)
+        call vv_integrator2(imin,imax,positions,velocities,vlist,nnlist,cutoff,L,dt)
         call therm_Andersen(imin,imax,velocities,nu,sigma,Nsub)
         ! -----------------------------------------------------------
         ! compute kinetic, potential and total energies
@@ -195,7 +195,8 @@ contains
         close(unit_tem)
         close(unit_pre)
     endif
-    deallocate(forces, nnlist, vlist, gather_counts, gather_displs)
+    ! deallocate(forces)
+    deallocate(nnlist, vlist, gather_counts, gather_displs)
     end subroutine main_loop
 
     subroutine boxmuller(sigma, x1, x2, xout1, xout2)
