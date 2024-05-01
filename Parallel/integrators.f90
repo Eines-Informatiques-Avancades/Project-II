@@ -191,7 +191,7 @@ contains
                     call verletlist(imin,imax,N,positions,vcutoff,nnlist,vlist)
                 endif
             endif
-        enddo
+        endif
     enddo
     
     if (iproc==0) then
